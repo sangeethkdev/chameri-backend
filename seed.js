@@ -18,7 +18,8 @@ const seedAdmin = async () => {
     name: "CHAMERI Admin",
     email: "admin@chameri.com",
     password: "chameri@123",
-    role: "superadmin",
+    plainPassword: "chameri@123",
+    role: "admin",
   });
 
   console.log("✅ Admin created successfully!");

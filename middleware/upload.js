@@ -22,6 +22,7 @@ const uploadServiceImage = createUploader("chameri/services");
 const uploadBlogImage = createUploader("chameri/blogs");
 const uploadTestimonialImage = createUploader("chameri/testimonials");
 const uploadGeneralImage = createUploader("chameri/general");
+const uploadAboutImage = createUploader("chameri/about");
 
 module.exports = {
   createUploader,
@@ -31,4 +32,5 @@ module.exports = {
   uploadBlogImage,
   uploadTestimonialImage,
   uploadGeneralImage,
+  uploadAboutImage,
 };

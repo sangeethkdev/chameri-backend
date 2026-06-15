@@ -36,13 +36,13 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-// ─── Super Admin only ───────────────────────────────────────────────────────
+// ─── Admin only ─────────────────────────────────────────────────────────────
 const superAdmin = (req, res, next) => {
-  if (req.admin && req.admin.role === "superadmin") {
+  if (req.admin && req.admin.role === "admin") {
     next();
   } else {
     res.status(403);
-    throw new Error("Access denied — superadmin only");
+    throw new Error("Access denied — admin role required");
   }
 };
 

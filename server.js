@@ -49,9 +49,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/admin", adminRoutes);
 // TODO: Add more routes as sections expand
-// app.use("/api/services", require("./routes/serviceRoutes"));
-// app.use("/api/team", require("./routes/teamRoutes"));
-// app.use("/api/blogs", require("./routes/blogRoutes"));
+app.use("/api/about", require("./routes/aboutRoutes"));
 // app.use("/api/testimonials", require("./routes/testimonialRoutes"));
 // app.use("/api/contacts", require("./routes/contactRoutes"));
 

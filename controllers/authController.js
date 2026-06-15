@@ -22,7 +22,7 @@ const checkRole = asyncHandler(async (req, res) => {
   const admin = await Admin.findOne({ email: email.toLowerCase().trim() }).select("role");
   if (!admin) return res.json({ isAdmin: false });
 
-  const isAdmin = admin.role === "admin" || admin.role === "superadmin";
+  const isAdmin = admin.role === "admin";
   res.json({ isAdmin });
 });
 
@@ -61,6 +61,7 @@ const updatePassword = asyncHandler(async (req, res) => {
     throw new Error("Current password is incorrect");
   }
   admin.password = newPassword;
+  admin.plainPassword = newPassword;
   await admin.save();
   res.json({ success: true, message: "Password updated" });
 });
@@ -104,8 +105,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
     throw new Error("No admin account found with this email.");
   }
 
-  // 2. Only admin / superadmin can use forgot-password
-  if (admin.role !== "admin" && admin.role !== "superadmin") {
+  // Only admin can use forgot-password
+  if (admin.role !== "admin") {
     res.status(403);
     throw new Error("Forgot password is only available for admin accounts.");
   }
@@ -200,6 +201,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   admin.password = newPassword;
+  admin.plainPassword = newPassword;
   admin.resetToken = null;
   admin.resetTokenExpires = null;
   await admin.save();
