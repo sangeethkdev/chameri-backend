@@ -3,13 +3,14 @@ const multer = require("multer");
 const { cloudinary } = require("../config/cloudinary");
 
 // ─── Generic image upload (any folder) ─────────────────────────────────────
-const createUploader = (folder = "chameri") => {
+const createUploader = (folder = "chameri", resourceType = "image", formats = ["jpg", "jpeg", "png", "webp", "svg"]) => {
   const storage = new CloudinaryStorage({
     cloudinary,
     params: {
       folder,
-      allowed_formats: ["jpg", "jpeg", "png", "webp", "svg"],
-      transformation: [{ quality: "auto", fetch_format: "auto" }],
+      allowed_formats: formats,
+      resource_type: resourceType,
+      transformation: resourceType === "image" ? [{ quality: "auto", fetch_format: "auto" }] : undefined,
     },
   });
   return multer({ storage });
@@ -23,6 +24,9 @@ const uploadBlogImage = createUploader("chameri/blogs");
 const uploadTestimonialImage = createUploader("chameri/testimonials");
 const uploadGeneralImage = createUploader("chameri/general");
 const uploadAboutImage = createUploader("chameri/about");
+const uploadKiwanoImage = createUploader("chameri/kiwano");
+const uploadKiwanoVideo = createUploader("chameri/kiwano", "video", ["mp4", "mov", "avi", "webm"]);
+const uploadKiwanoMedia = createUploader("chameri/kiwano", "auto", ["jpg", "jpeg", "png", "webp", "mp4", "mov", "avi", "webm"]);
 
 module.exports = {
   createUploader,
@@ -33,4 +37,7 @@ module.exports = {
   uploadTestimonialImage,
   uploadGeneralImage,
   uploadAboutImage,
+  uploadKiwanoImage,
+  uploadKiwanoVideo,
+  uploadKiwanoMedia,
 };
