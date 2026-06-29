@@ -413,37 +413,49 @@ const updateTestimonialSection = asyncHandler(async (req, res) => {
 
   const newCards = [];
   let fileIndex = 0;
-  
+  let cardFileIndex = 0;
+
   for (let card of parsedCards) {
     let imageUrl = card.existingImage || "";
-    
-    // If this card has a new file attached, get its path
+
     if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-       if (req.files && req.files["testimonialImages"] && req.files["testimonialImages"][fileIndex]) {
-          // Delete old image if we are replacing it
-          if (imageUrl) {
-             await deleteOld(imageUrl);
-          }
-          imageUrl = req.files["testimonialImages"][fileIndex].path;
-          fileIndex++;
-       }
+      if (req.files && req.files["testimonialImages"] && req.files["testimonialImages"][fileIndex]) {
+        if (imageUrl) await deleteOld(imageUrl);
+        imageUrl = req.files["testimonialImages"][fileIndex].path;
+        fileIndex++;
+      }
     }
-    
+
+    let cardImageUrl = card.existingCardImage || "";
+
+    if (card.newCardImageIndex !== undefined && card.newCardImageIndex !== null) {
+      if (req.files && req.files["testimonialCardImages"] && req.files["testimonialCardImages"][cardFileIndex]) {
+        if (cardImageUrl) await deleteOld(cardImageUrl);
+        cardImageUrl = req.files["testimonialCardImages"][cardFileIndex].path;
+        cardFileIndex++;
+      }
+    }
+
     newCards.push({
-       quote: card.quote || "",
-       name: card.name || "",
-       designation: card.designation || "",
-       image: imageUrl
+      quote: card.quote || "",
+      name: card.name || "",
+      designation: card.designation || "",
+      image: imageUrl,
+      cardImage: cardImageUrl,
     });
   }
 
-  // Find images that were in the DB but are not in the newCards array, and delete them
   const oldImages = aboutMain.testimonialSection?.cards?.map(c => c.image).filter(Boolean) || [];
+  const oldCardImages = aboutMain.testimonialSection?.cards?.map(c => c.cardImage).filter(Boolean) || [];
   const newImages = newCards.map(c => c.image).filter(Boolean);
-  
-  const removedImages = oldImages.filter(url => !newImages.includes(url));
+  const newCardImages = newCards.map(c => c.cardImage).filter(Boolean);
+
+  const removedImages = [
+    ...oldImages.filter(url => !newImages.includes(url)),
+    ...oldCardImages.filter(url => !newCardImages.includes(url)),
+  ];
   for (const url of removedImages) {
-      await deleteOld(url);
+    await deleteOld(url);
   }
 
   aboutMain.testimonialSection = {

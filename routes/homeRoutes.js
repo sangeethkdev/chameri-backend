@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const {
   getHomeMain,
   updateHomeHeroSection,
@@ -10,17 +11,35 @@ const {
   updateHomeGallerySection,
   updateHomeOurTeamSection,
   updateHomeTestimonialSection,
+  updateHomeFaqSection,
 } = require("../controllers/homeMainController");
 const { protect } = require("../middleware/auth");
-const { uploadAboutImage } = require("../middleware/upload"); // Re-using image uploader
+const { uploadHomeImage } = require("../middleware/upload");
 
-// Middleware to ensure user is logged in and is an admin
+// Middleware to ensure user is logged in (admin or editor can edit content)
 const requireAdmin = (req, res, next) => {
-  if (req.admin?.role === "admin") {
+  if (req.admin && (req.admin.role === "admin" || req.admin.role === "editor")) {
     return next();
   }
-  res.status(403);
-  throw new Error("Access denied — admin role required");
+  return res.status(403).json({ success: false, message: "Access denied — insufficient permissions" });
+};
+
+// ─── Multer error wrapper ────────────────────────────────────────────────────
+// Multer errors (e.g. LIMIT_UNEXPECTED_FILE, Cloudinary failures) bypass
+// asyncHandler. This wrapper catches them and sends proper JSON responses.
+const handleUpload = (uploadMiddleware) => (req, res, next) => {
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      console.error("Upload error:", err.code || "", err.message);
+      if (err instanceof multer.MulterError) {
+        res.status(400);
+        return next(new Error(`Upload error: ${err.message} (field: ${err.field || "unknown"})`));
+      }
+      res.status(500);
+      return next(new Error(`File upload failed: ${err.message}`));
+    }
+    next();
+  });
 };
 
 // @route   GET /api/home/main
@@ -37,7 +56,7 @@ router.put(
   "/main/logos",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([{ name: "homeLogos", maxCount: 15 }]),
+  handleUpload(uploadHomeImage.fields([{ name: "homeLogos", maxCount: 15 }])),
   updateHomeLogosSection
 );
 
@@ -46,10 +65,10 @@ router.put(
   "/main/villaplan",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([
+  handleUpload(uploadHomeImage.fields([
     { name: "card1Image", maxCount: 1 },
     { name: "card2Image", maxCount: 1 },
-  ]),
+  ])),
   updateHomeVillaPlanSection
 );
 
@@ -58,11 +77,11 @@ router.put(
   "/main/chooseus",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([
+  handleUpload(uploadHomeImage.fields([
     { name: "card1Image", maxCount: 1 },
     { name: "card2Image", maxCount: 1 },
     { name: "card3Image", maxCount: 1 },
-  ]),
+  ])),
   updateHomeChooseUsSection
 );
 
@@ -71,13 +90,13 @@ router.put(
   "/main/gallery",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([
+  handleUpload(uploadHomeImage.fields([
     { name: "card1Images", maxCount: 2 },
     { name: "card2Images", maxCount: 2 },
     { name: "card3Images", maxCount: 2 },
     { name: "card4Images", maxCount: 2 },
     { name: "card5Images", maxCount: 2 },
-  ]),
+  ])),
   updateHomeGallerySection
 );
 
@@ -86,13 +105,13 @@ router.put(
   "/main/ourteam",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([
+  handleUpload(uploadHomeImage.fields([
     { name: "card1Image", maxCount: 1 },
     { name: "card2Image", maxCount: 1 },
     { name: "card3Image", maxCount: 1 },
     { name: "card4Image", maxCount: 1 },
     { name: "card5Image", maxCount: 1 },
-  ]),
+  ])),
   updateHomeOurTeamSection
 );
 
@@ -101,8 +120,14 @@ router.put(
   "/main/testimonial",
   protect,
   requireAdmin,
-  uploadAboutImage.fields([{ name: "testimonialImages", maxCount: 20 }]),
+  handleUpload(uploadHomeImage.fields([
+    { name: "testimonialImages", maxCount: 20 },
+    { name: "testimonialCardImages", maxCount: 20 }
+  ])),
   updateHomeTestimonialSection
 );
+
+// @route   PUT /api/home/main/faq
+router.put("/main/faq", protect, requireAdmin, updateHomeFaqSection);
 
 module.exports = router;

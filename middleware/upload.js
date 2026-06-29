@@ -24,6 +24,7 @@ const uploadBlogImage = createUploader("chameri/blogs");
 const uploadTestimonialImage = createUploader("chameri/testimonials");
 const uploadGeneralImage = createUploader("chameri/general");
 const uploadAboutImage = createUploader("chameri/about");
+const uploadHomeImage = createUploader("chameri/home");
 const uploadKiwanoImage = createUploader("chameri/kiwano");
 const uploadKiwanoVideo = createUploader("chameri/kiwano", "video", ["mp4", "mov", "avi", "webm"]);
 const uploadKiwanoMedia = createUploader("chameri/kiwano", "auto", ["jpg", "jpeg", "png", "webp", "mp4", "mov", "avi", "webm"]);
@@ -37,6 +38,7 @@ module.exports = {
   uploadTestimonialImage,
   uploadGeneralImage,
   uploadAboutImage,
+  uploadHomeImage,
   uploadKiwanoImage,
   uploadKiwanoVideo,
   uploadKiwanoMedia,

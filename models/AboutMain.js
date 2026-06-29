@@ -20,6 +20,7 @@ const testimonialCardSchema = new mongoose.Schema({
   name:        { type: String, default: "" },
   designation: { type: String, default: "" },
   image:       { type: String, default: "" },
+  cardImage:   { type: String, default: "" },
 });
 
 const aboutMainSchema = new mongoose.Schema(

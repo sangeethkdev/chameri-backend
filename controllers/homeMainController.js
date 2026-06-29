@@ -80,10 +80,12 @@ const updateHomeLogosSection = asyncHandler(async (req, res) => {
   const removedLogos = homeMain.logos.filter((url) => !updatedLogos.includes(url));
   for (const url of removedLogos) {
     try {
-      const urlParts = url.split("/");
-      const filename = urlParts[urlParts.length - 1];
-      const publicId = filename.split(".")[0];
-      await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+      const urlParts = url.split("/upload/");
+      if (urlParts.length > 1) {
+        const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      }
     } catch (err) {
       console.error("Failed to delete removed home logo:", err);
     }
@@ -107,35 +109,38 @@ const updateHomeVillaPlanSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
-  const { heading, subheading, card1Heading, card2Heading } = req.body;
+  const { heading, subheading, card1Heading, card1Description, card2Heading, card2Description } = req.body; console.log('VILLAPLAN BODY:', req.body);
 
   // Helper: delete old Cloudinary image by URL
   const deleteOld = async (url) => {
     if (!url) return;
     try {
-      const parts = url.split("/");
-      const publicId = parts[parts.length - 1].split(".")[0];
-      await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+      const urlParts = url.split("/upload/");
+      if (urlParts.length > 1) {
+        const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      }
     } catch (err) {
       console.error("Failed to delete home villaplan image:", err);
     }
   };
 
-  const buildCard = async (key, cardHeading) => {
+  const buildCard = async (key, cardHeading, cardDescription) => {
     const existing = homeMain.villaPlan?.[key]?.image || "";
     let imageUrl = existing;
     if (req.files && req.files[`${key}Image`]) {
       await deleteOld(existing);
       imageUrl = req.files[`${key}Image`][0].path;
     }
-    return { heading: cardHeading || "", image: imageUrl };
+    return { heading: cardHeading || "", description: cardDescription || "", image: imageUrl };
   };
 
   homeMain.villaPlan = {
     heading: heading || "",
     subheading: subheading || "",
-    card1: await buildCard("card1", card1Heading),
-    card2: await buildCard("card2", card2Heading),
+    card1: await buildCard("card1", card1Heading, card1Description),
+    card2: await buildCard("card2", card2Heading, card2Description),
   };
 
   await homeMain.save();
@@ -155,9 +160,12 @@ const updateHomeChooseUsSection = asyncHandler(async (req, res) => {
   const deleteOld = async (url) => {
     if (!url) return;
     try {
-      const parts = url.split("/");
-      const publicId = parts[parts.length - 1].split(".")[0];
-      await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+      const urlParts = url.split("/upload/");
+      if (urlParts.length > 1) {
+        const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      }
     } catch (err) {
       console.error("Failed to delete home chooseus image:", err);
     }
@@ -217,9 +225,12 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
     const removedImages = previousImages.filter((url) => !existingImages.includes(url));
     for (const url of removedImages) {
       try {
-        const urlParts = url.split("/");
-        const publicId = urlParts[urlParts.length - 1].split(".")[0];
-        await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+        const urlParts = url.split("/upload/");
+        if (urlParts.length > 1) {
+          const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+          const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+          await cloudinary.uploader.destroy(publicId);
+        }
       } catch (err) {
         console.error(`Failed to delete gallery ${key} image:`, err);
       }
@@ -262,9 +273,12 @@ const updateHomeOurTeamSection = asyncHandler(async (req, res) => {
   const deleteOld = async (url) => {
     if (!url) return;
     try {
-      const parts = url.split("/");
-      const publicId = parts[parts.length - 1].split(".")[0];
-      await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+      const urlParts = url.split("/upload/");
+      if (urlParts.length > 1) {
+        const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      }
     } catch (err) {
       console.error("Failed to delete home ourteam image:", err);
     }
@@ -322,9 +336,12 @@ const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
   const deleteOld = async (url) => {
     if (!url) return;
     try {
-      const parts = url.split("/");
-      const publicId = parts[parts.length - 1].split(".")[0];
-      await cloudinary.uploader.destroy(`chameri/home/${publicId}`);
+      const urlParts = url.split("/upload/");
+      if (urlParts.length > 1) {
+        const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
+        const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
+        await cloudinary.uploader.destroy(publicId);
+      }
     } catch (err) {
       console.error("Failed to delete testimonial image:", err);
     }
@@ -332,6 +349,7 @@ const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
 
   const newCards = [];
   let fileIndex = 0;
+  let cardFileIndex = 0;
   
   for (let card of parsedCards) {
     let imageUrl = card.existingImage || "";
@@ -347,21 +365,38 @@ const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
           fileIndex++;
        }
     }
+    let cardImageUrl = card.existingCardImage || "";
+    
+    // If this card has a new card background image file attached, get its path
+    if (card.newCardImageIndex !== undefined && card.newCardImageIndex !== null) {
+       if (req.files && req.files["testimonialCardImages"] && req.files["testimonialCardImages"][cardFileIndex]) {
+          // Delete old image if we are replacing it
+          if (cardImageUrl) {
+             await deleteOld(cardImageUrl);
+          }
+          cardImageUrl = req.files["testimonialCardImages"][cardFileIndex].path;
+          cardFileIndex++;
+       }
+    }
     
     newCards.push({
        quote: card.quote || "",
        name: card.name || "",
        designation: card.designation || "",
-       image: imageUrl
+       image: imageUrl,
+       cardImage: cardImageUrl
     });
   }
 
   // Find images that were in the DB but are not in the newCards array, and delete them
   const oldImages = homeMain.testimonial?.cards?.map(c => c.image).filter(Boolean) || [];
   const newImages = newCards.map(c => c.image).filter(Boolean);
+  const oldCardImages = homeMain.testimonial?.cards?.map(c => c.cardImage).filter(Boolean) || [];
+  const newCardImages = newCards.map(c => c.cardImage).filter(Boolean);
   
   const removedImages = oldImages.filter(url => !newImages.includes(url));
-  for (const url of removedImages) {
+  const removedCardImages = oldCardImages.filter(url => !newCardImages.includes(url));
+  for (const url of [...removedImages, ...removedCardImages]) {
       await deleteOld(url);
   }
 
@@ -369,6 +404,34 @@ const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
     heading: heading || "",
     subheading: subheading || "",
     cards: newCards,
+  };
+
+  await homeMain.save();
+  res.json({ success: true, data: homeMain });
+});
+
+// @desc   Update Home FAQ Section
+// @route  PUT /api/home/main/faq
+// @access Private (Admin only)
+const updateHomeFaqSection = asyncHandler(async (req, res) => {
+  let homeMain = await HomeMain.findOne();
+  if (!homeMain) homeMain = new HomeMain();
+
+  const { heading, subheading, faqsData } = req.body;
+
+  let parsedFaqs = [];
+  if (faqsData) {
+    try {
+      parsedFaqs = JSON.parse(faqsData);
+    } catch (err) {
+      console.error("Error parsing faqs data", err);
+    }
+  }
+
+  homeMain.faqSection = {
+    heading: heading || "",
+    subheading: subheading || "",
+    faqs: parsedFaqs.map(f => ({ question: f.question || "", answer: f.answer || "" })),
   };
 
   await homeMain.save();
@@ -385,4 +448,5 @@ module.exports = {
   updateHomeGallerySection,
   updateHomeOurTeamSection,
   updateHomeTestimonialSection,
+  updateHomeFaqSection,
 };

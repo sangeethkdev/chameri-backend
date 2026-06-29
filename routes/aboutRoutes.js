@@ -117,6 +117,7 @@ router.put(
   requireAdmin,
   uploadAboutImage.fields([
     { name: "testimonialImages", maxCount: 20 },
+    { name: "testimonialCardImages", maxCount: 20 },
   ]),
   updateTestimonialSection
 );

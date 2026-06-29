@@ -5,6 +5,7 @@ const homeTestimonialCardSchema = new mongoose.Schema({
   name: { type: String, default: "" },
   designation: { type: String, default: "" },
   image: { type: String, default: "" },
+  cardImage: { type: String, default: "" },
 });
 
 const homeMainSchema = new mongoose.Schema(
@@ -31,10 +32,12 @@ const homeMainSchema = new mongoose.Schema(
       subheading: { type: String, default: "" },
       card1: {
         heading: { type: String, default: "" },
+        description: { type: String, default: "" },
         image: { type: String, default: "" }
       },
       card2: {
         heading: { type: String, default: "" },
+        description: { type: String, default: "" },
         image: { type: String, default: "" }
       }
     },
@@ -127,6 +130,16 @@ const homeMainSchema = new mongoose.Schema(
       heading: { type: String, default: "" },
       subheading: { type: String, default: "" },
       cards: [homeTestimonialCardSchema]
+    },
+    faqSection: {
+      heading: { type: String, default: "" },
+      subheading: { type: String, default: "" },
+      faqs: [
+        {
+          question: { type: String, default: "" },
+          answer: { type: String, default: "" },
+        }
+      ]
     }
   },
   { timestamps: true }
