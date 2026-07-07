@@ -16,7 +16,9 @@ const projectRoutes = require("./routes/projectRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
 // ─── Connect Services ────────────────────────────────────────────────────────
-connectDB();
+connectDB().catch((err) => {
+  console.error("❌ Initial MongoDB connection failed:", err.message);
+});
 connectCloudinary();
 
 const app = express();
@@ -27,6 +29,7 @@ app.use(
   cors({
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
+      "https://chameri-admin-dashboard.vercel.app",
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:3000",
