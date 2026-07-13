@@ -1,0 +1,99 @@
+const express = require("express");
+const router = express.Router();
+const {
+  getKiwanoVillamentMain,
+  updateKiwanoVillamentHeroSection,
+  updateKiwanoVillamentLuxuryVillasSection,
+  updateKiwanoVillamentFeatureSection,
+  updateKiwanoVillamentTour360Section,
+  updateKiwanoVillamentGallerySection,
+  updateKiwanoVillamentAmenitiesSection,
+  updateKiwanoVillamentOtherProjectSection,
+} = require("../controllers/kiwanoVillamentMainController");
+const { protect } = require("../middleware/auth");
+const { uploadKiwanoVillamentVideo, uploadKiwanoVillamentImage, uploadKiwanoVillamentMedia } = require("../middleware/upload");
+
+// Guard: admin-only writes
+const requireAdmin = (req, res, next) => {
+  if (req.admin?.role === "admin") return next();
+  res.status(403);
+  throw new Error("Access denied — admin role required");
+};
+
+// @route  GET /api/kiwano-villament/main
+// @access Public
+router.get("/main", getKiwanoVillamentMain);
+
+// @route  PUT /api/kiwano-villament/main/hero
+// @access Private/Admin
+router.put(
+  "/main/hero",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentVideo.fields([{ name: "video", maxCount: 1 }]),
+  updateKiwanoVillamentHeroSection
+);
+
+// @route  PUT /api/kiwano-villament/main/luxury-villas
+// @access Private/Admin
+router.put(
+  "/main/luxury-villas",
+  protect,
+  requireAdmin,
+  updateKiwanoVillamentLuxuryVillasSection
+);
+
+// @route  PUT /api/kiwano-villament/main/feature-section
+// @access Private/Admin
+router.put(
+  "/main/feature-section",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentImage.fields([{ name: "featureImages" }]),
+  updateKiwanoVillamentFeatureSection
+);
+
+// @route  PUT /api/kiwano-villament/main/tour360-section
+// @access Private/Admin
+router.put(
+  "/main/tour360-section",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentMedia.fields([{ name: "media", maxCount: 1 }]),
+  updateKiwanoVillamentTour360Section
+);
+
+// @route  PUT /api/kiwano-villament/main/gallery-section
+// @access Private/Admin
+router.put(
+  "/main/gallery-section",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentImage.fields([
+    { name: "exteriorImages" },
+    { name: "interiorImages" },
+    { name: "amenitiesImages" },
+  ]),
+  updateKiwanoVillamentGallerySection
+);
+
+// @route  PUT /api/kiwano-villament/main/amenities-section
+// @access Private/Admin
+router.put(
+  "/main/amenities-section",
+  protect,
+  requireAdmin,
+  updateKiwanoVillamentAmenitiesSection
+);
+
+// @route  PUT /api/kiwano-villament/main/other-project-section
+// @access Private/Admin
+router.put(
+  "/main/other-project-section",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentImage.fields([{ name: "image", maxCount: 1 }]),
+  updateKiwanoVillamentOtherProjectSection
+);
+
+module.exports = router;

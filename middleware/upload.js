@@ -28,6 +28,9 @@ const uploadHomeImage = createUploader("chameri/home");
 const uploadKiwanoImage = createUploader("chameri/kiwano");
 const uploadKiwanoVideo = createUploader("chameri/kiwano", "video", ["mp4", "mov", "avi", "webm"]);
 const uploadKiwanoMedia = createUploader("chameri/kiwano", "auto", ["jpg", "jpeg", "png", "webp", "mp4", "mov", "avi", "webm"]);
+const uploadKiwanoVillamentImage = createUploader("chameri/kiwano-villament");
+const uploadKiwanoVillamentVideo = createUploader("chameri/kiwano-villament", "video", ["mp4", "mov", "avi", "webm"]);
+const uploadKiwanoVillamentMedia = createUploader("chameri/kiwano-villament", "auto", ["jpg", "jpeg", "png", "webp", "mp4", "mov", "avi", "webm"]);
 
 module.exports = {
   createUploader,
@@ -42,4 +45,7 @@ module.exports = {
   uploadKiwanoImage,
   uploadKiwanoVideo,
   uploadKiwanoMedia,
+  uploadKiwanoVillamentImage,
+  uploadKiwanoVillamentVideo,
+  uploadKiwanoVillamentMedia,
 };
