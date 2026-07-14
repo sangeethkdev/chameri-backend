@@ -20,6 +20,7 @@ const createUploader = (folder = "chameri", resourceType = "image", formats = ["
 const uploadProjectImage = createUploader("chameri/projects");
 const uploadTeamImage = createUploader("chameri/team");
 const uploadServiceImage = createUploader("chameri/services");
+const uploadServiceVideo = createUploader("chameri/services", "video", ["mp4", "mov", "avi", "webm"]);
 const uploadBlogImage = createUploader("chameri/blogs");
 const uploadTestimonialImage = createUploader("chameri/testimonials");
 const uploadGeneralImage = createUploader("chameri/general");
@@ -37,6 +38,7 @@ module.exports = {
   uploadProjectImage,
   uploadTeamImage,
   uploadServiceImage,
+  uploadServiceVideo,
   uploadBlogImage,
   uploadTestimonialImage,
   uploadGeneralImage,
