@@ -59,6 +59,8 @@ app.use("/api/gallery", require("./routes/galleryRoutes"));
 app.use("/api/kiwano", require("./routes/kiwanoRoutes"));
 app.use("/api/kiwano-villament", require("./routes/kiwanoVillamentRoutes"));
 app.use("/api/services", require("./routes/serviceMainRoutes"));
+app.use("/api/projects-main", require("./routes/projectsMainRoutes"));
+app.use("/api/testimonials-main", require("./routes/testimonialsMainRoutes"));
 // app.use("/api/testimonials", require("./routes/testimonialRoutes"));
 // app.use("/api/contacts", require("./routes/contactRoutes"));
 
