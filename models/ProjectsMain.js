@@ -9,6 +9,7 @@ const projectsMainSchema = new mongoose.Schema(
     cardsSection: {
       cards: [
         {
+          title: { type: String, default: "" },
           heading: { type: String, default: "" },
           subheading: { type: String, default: "" },
           image: { type: String, default: "" },

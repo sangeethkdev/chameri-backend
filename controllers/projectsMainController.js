@@ -71,6 +71,7 @@ const updateProjectsCardsSection = asyncHandler(async (req, res) => {
     }
 
     newCards.push({
+      title: card.title || "",
       heading: card.heading || "",
       subheading: card.subheading || "",
       image: imageUrl,
