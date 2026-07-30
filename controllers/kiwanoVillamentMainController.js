@@ -235,6 +235,64 @@ exports.updateKiwanoVillamentAmenitiesSection = async (req, res) => {
   }
 };
 
+// @desc    Update Kiwano Villament Highlights section
+// @route   PUT /api/kiwano-villament/main/highlights-section
+// @access  Private/Admin
+exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
+  try {
+    let data = await KiwanoVillamentMain.findOne();
+    if (!data) data = new KiwanoVillamentMain();
+
+    const { heading, subheading, existingImages } = req.body;
+
+    const deleteAsset = async (url) => {
+      if (!url) return;
+      try {
+        const parts = url.split("/");
+        const publicId = parts[parts.length - 1].split(".")[0];
+        await cloudinary.uploader.destroy(`chameri/kiwano-villament/${publicId}`, { resource_type: "auto" });
+      } catch (err) {
+        console.error("Failed to delete highlights asset:", err);
+      }
+    };
+
+    data.highlightsSection.heading = heading !== undefined ? heading : data.highlightsSection.heading;
+    data.highlightsSection.subheading = subheading !== undefined ? subheading : data.highlightsSection.subheading;
+
+    if (req.files && req.files.video && req.files.video[0]) {
+      if (data.highlightsSection.video) await deleteAsset(data.highlightsSection.video);
+      data.highlightsSection.video = req.files.video[0].path;
+    }
+
+    let updatedImages = [];
+    if (existingImages) {
+      try {
+        updatedImages = JSON.parse(existingImages);
+      } catch (err) {
+        updatedImages = typeof existingImages === "string" ? [existingImages] : existingImages;
+      }
+    }
+
+    const oldImages = data.highlightsSection.images || [];
+    const removedImages = oldImages.filter((url) => !updatedImages.includes(url));
+    for (const url of removedImages) {
+      await deleteAsset(url);
+    }
+
+    if (req.files && req.files.images) {
+      const newUrls = req.files.images.map((file) => file.path);
+      updatedImages = [...updatedImages, ...newUrls];
+    }
+
+    data.highlightsSection.images = updatedImages.slice(0, 4);
+
+    await data.save();
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // @desc    Update Kiwano Villament Other Project section
 // @route   PUT /api/kiwano-villament/main/other-project-section
 // @access  Private/Admin

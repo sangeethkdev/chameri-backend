@@ -40,6 +40,12 @@ const kiwanoMainSchema = new mongoose.Schema(
       subheading: { type: String, default: "" },
       image: { type: String, default: "" },
     },
+    highlightsSection: {
+      heading: { type: String, default: "" },
+      subheading: { type: String, default: "" },
+      video: { type: String, default: "" },
+      images: [{ type: String }],
+    },
   },
   { timestamps: true }
 );

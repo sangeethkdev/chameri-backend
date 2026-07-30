@@ -9,9 +9,15 @@ const {
   updateKiwanoVillamentGallerySection,
   updateKiwanoVillamentAmenitiesSection,
   updateKiwanoVillamentOtherProjectSection,
+  updateKiwanoVillamentHighlightsSection,
 } = require("../controllers/kiwanoVillamentMainController");
 const { protect } = require("../middleware/auth");
 const { uploadKiwanoVillamentVideo, uploadKiwanoVillamentImage, uploadKiwanoVillamentMedia } = require("../middleware/upload");
+
+const uploadKiwanoVillamentHighlights = uploadKiwanoVillamentMedia.fields([
+  { name: "video", maxCount: 1 },
+  { name: "images", maxCount: 4 },
+]);
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -94,6 +100,16 @@ router.put(
   requireAdmin,
   uploadKiwanoVillamentImage.fields([{ name: "image", maxCount: 1 }]),
   updateKiwanoVillamentOtherProjectSection
+);
+
+// @route  PUT /api/kiwano-villament/main/highlights-section
+// @access Private/Admin
+router.put(
+  "/main/highlights-section",
+  protect,
+  requireAdmin,
+  uploadKiwanoVillamentHighlights,
+  updateKiwanoVillamentHighlightsSection
 );
 
 module.exports = router;
