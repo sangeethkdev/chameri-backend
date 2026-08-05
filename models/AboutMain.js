@@ -31,6 +31,7 @@ const aboutMainSchema = new mongoose.Schema(
     },
     story: {
       heading: { type: String, default: "" },
+      // Rich text (sanitized HTML) authored in the admin editor.
       description: { type: String, default: "" },
     },
     founder: {

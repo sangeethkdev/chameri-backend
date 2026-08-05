@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const AboutMain = require("../models/AboutMain");
 const { cloudinary } = require("../config/cloudinary");
+const { sanitizeHtml } = require("../utils/sanitizeHtml");
 
 // @desc   Get About Main section content
 // @route  GET /api/about/main
@@ -47,7 +48,7 @@ const updateAboutMain = asyncHandler(async (req, res) => {
   aboutMain.hero.subheading = heroSubheading || "";
 
   aboutMain.story.heading = storyHeading || "";
-  aboutMain.story.description = storyDescription || "";
+  aboutMain.story.description = sanitizeHtml(storyDescription);
 
   aboutMain.founder.quote = founderQuote || "";
   aboutMain.founder.name = founderName || "";
@@ -131,7 +132,8 @@ const updateStorySection = asyncHandler(async (req, res) => {
 
   const { storyHeading, storyDescription } = req.body;
   aboutMain.story.heading = storyHeading || "";
-  aboutMain.story.description = storyDescription || "";
+  // Description is rich text (HTML) authored in the admin editor.
+  aboutMain.story.description = sanitizeHtml(storyDescription);
 
   await aboutMain.save();
   res.json({ success: true, data: aboutMain });
