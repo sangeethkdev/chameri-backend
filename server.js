@@ -8,6 +8,7 @@ const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 const { connectCloudinary } = require("./config/cloudinary");
 const { errorHandler, notFound } = require("./middleware/errorHandler");
+const { revalidateOnWrite } = require("./middleware/revalidateOnWrite");
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 const authRoutes = require("./routes/authRoutes");
@@ -46,6 +47,9 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.json({ success: true, message: "CHAMERI API is running 🚀" });
 });
+
+// ─── Push content changes to the public site (must precede the routes) ───────
+app.use(revalidateOnWrite);
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
