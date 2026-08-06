@@ -7,6 +7,7 @@ const kiwanoMainSchema = new mongoose.Schema(
       heading: { type: String, default: "" },
     },
     luxuryVillasSection: {
+      heading: { type: String, default: "" },
       subheading: { type: String, default: "" },
     },
     featureSection: {
@@ -16,7 +17,6 @@ const kiwanoMainSchema = new mongoose.Schema(
         {
           image: { type: String, default: "" },
           name: { type: String, default: "" },
-          description: { type: String, default: "" },
         },
       ],
     },
@@ -39,6 +39,9 @@ const kiwanoMainSchema = new mongoose.Schema(
       heading: { type: String, default: "" },
       subheading: { type: String, default: "" },
       image: { type: String, default: "" },
+      // Overlay text rendered on top of the section image
+      imageHeading: { type: String, default: "" },
+      imageSubheading: { type: String, default: "" },
     },
     highlightsSection: {
       heading: { type: String, default: "" },

@@ -44,10 +44,11 @@ exports.updateKiwanoHeroSection = async (req, res) => {
 // @access  Private/Admin
 exports.updateKiwanoLuxuryVillasSection = async (req, res) => {
   try {
-    const { subheading } = req.body;
+    const { heading, subheading } = req.body;
     let data = await KiwanoMain.findOne();
     if (!data) data = new KiwanoMain();
 
+    data.luxuryVillasSection.heading = heading !== undefined ? heading : data.luxuryVillasSection.heading;
     data.luxuryVillasSection.subheading = subheading !== undefined ? subheading : data.luxuryVillasSection.subheading;
 
     await data.save();
@@ -105,7 +106,6 @@ exports.updateKiwanoFeatureSection = async (req, res) => {
 
       newFeatures.push({
         name: feature.name || "",
-        description: feature.description || "",
         image: imageUrl
       });
     }
@@ -301,9 +301,11 @@ exports.updateKiwanoOtherProjectSection = async (req, res) => {
     let data = await KiwanoMain.findOne();
     if (!data) data = new KiwanoMain();
 
-    const { heading, subheading } = req.body;
+    const { heading, subheading, imageHeading, imageSubheading } = req.body;
     data.otherProjectSection.heading = heading !== undefined ? heading : data.otherProjectSection.heading;
     data.otherProjectSection.subheading = subheading !== undefined ? subheading : data.otherProjectSection.subheading;
+    data.otherProjectSection.imageHeading = imageHeading !== undefined ? imageHeading : data.otherProjectSection.imageHeading;
+    data.otherProjectSection.imageSubheading = imageSubheading !== undefined ? imageSubheading : data.otherProjectSection.imageSubheading;
 
     if (req.files && req.files.image && req.files.image[0]) {
       if (data.otherProjectSection.image) {
