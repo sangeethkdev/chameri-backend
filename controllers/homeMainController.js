@@ -20,12 +20,13 @@ const updateHomeHeroSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
-  const { heading, subheading1, subheading2 } = req.body;
+  const { heading, subheading1, subheading2, tagline } = req.body;
 
   homeMain.hero = {
     heading: heading || "",
     subheading1: subheading1 || "",
     subheading2: subheading2 || "",
+    tagline: tagline || "",
   };
 
   await homeMain.save();

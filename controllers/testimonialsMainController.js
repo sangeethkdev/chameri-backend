@@ -56,6 +56,15 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
     parsedCards = [];
   }
 
+  // Existing cards are reused (not rebuilt) so each keeps its _id and createdAt.
+  // Rebuilding the array from scratch would re-date every review on every save.
+  const oldCards = doc.reviewsSection?.cards || [];
+  const existingById = new Map(oldCards.map((c) => [String(c._id), c]));
+  // Snapshot old URLs before any in-place mutation below, since `existing`
+  // below is the *same* subdocument reference as the entries in oldCards.
+  const oldImages = oldCards.map((c) => c.image).filter(Boolean);
+  const oldVideos = oldCards.map((c) => c.video).filter(Boolean);
+
   const newCards = [];
   let imageFileIndex = 0;
   let videoFileIndex = 0;
@@ -80,22 +89,34 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
       }
     }
 
-    newCards.push({
-      image: imageUrl,
-      video: videoUrl,
-      quote: card.quote || "",
-      name: card.name || "",
-      role: card.role || "",
-      rating: card.rating || 5,
-    });
+    const existing = card._id ? existingById.get(String(card._id)) : null;
+
+    if (existing) {
+      // Mutate in place — _id and createdAt survive
+      existing.image = imageUrl;
+      existing.video = videoUrl;
+      existing.quote = card.quote || "";
+      existing.name = card.name || "";
+      existing.role = card.role || "";
+      existing.rating = card.rating || 5;
+      newCards.push(existing);
+    } else {
+      // Genuinely new review — Mongoose stamps a fresh _id and createdAt
+      newCards.push({
+        image: imageUrl,
+        video: videoUrl,
+        quote: card.quote || "",
+        name: card.name || "",
+        role: card.role || "",
+        rating: card.rating || 5,
+      });
+    }
   }
 
-  const oldImages = doc.reviewsSection?.cards?.map((c) => c.image).filter(Boolean) || [];
   const newImages = newCards.map((c) => c.image).filter(Boolean);
   const removedImages = oldImages.filter((url) => !newImages.includes(url));
   for (const url of removedImages) await deleteOld(url, "image");
 
-  const oldVideos = doc.reviewsSection?.cards?.map((c) => c.video).filter(Boolean) || [];
   const newVideos = newCards.map((c) => c.video).filter(Boolean);
   const removedVideos = oldVideos.filter((url) => !newVideos.includes(url));
   for (const url of removedVideos) await deleteOld(url, "video");

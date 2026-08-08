@@ -30,6 +30,7 @@ app.use(
   cors({
     origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
+      process.env.FRONTEND_URL || "http://localhost:3000",
       "https://chameri-admin-dashboard.vercel.app",
       "http://localhost:5173",
       "http://localhost:5174",
@@ -66,7 +67,7 @@ app.use("/api/services", require("./routes/serviceMainRoutes"));
 app.use("/api/projects-main", require("./routes/projectsMainRoutes"));
 app.use("/api/testimonials-main", require("./routes/testimonialsMainRoutes"));
 // app.use("/api/testimonials", require("./routes/testimonialRoutes"));
-// app.use("/api/contacts", require("./routes/contactRoutes"));
+app.use("/api/contacts", require("./routes/contactRoutes"));
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFound);

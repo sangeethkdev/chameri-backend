@@ -14,6 +14,8 @@ const homeMainSchema = new mongoose.Schema(
       heading: { type: String, default: "" },
       subheading1: { type: String, default: "" },
       subheading2: { type: String, default: "" },
+      // Small uppercase label sitting on the divider line
+      tagline: { type: String, default: "" },
     },
     aboutUs: {
       heading: { type: String, default: "" },
