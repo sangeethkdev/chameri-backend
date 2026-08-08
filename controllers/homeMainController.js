@@ -110,9 +110,16 @@ const updateHomeVillaPlanSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
-  const { heading, subheading, card1Heading, card1Description, card2Heading, card2Description } = req.body; console.log('VILLAPLAN BODY:', req.body);
+  const {
+    heading, subheading,
+    card1Heading, card1Description, card1Image,
+    card2Heading, card2Description, card2Image,
+  } = req.body;
 
-  // Helper: delete old Cloudinary image by URL
+  // Images are uploaded directly to Cloudinary from the browser (see
+  // /api/uploads/signature) — this endpoint only ever receives the
+  // resulting URL, never the file itself, so it isn't exposed to Vercel's
+  // ~4.5MB serverless function body limit.
   const deleteOld = async (url) => {
     if (!url) return;
     try {
@@ -127,12 +134,12 @@ const updateHomeVillaPlanSection = asyncHandler(async (req, res) => {
     }
   };
 
-  const buildCard = async (key, cardHeading, cardDescription) => {
+  const buildCard = async (key, cardHeading, cardDescription, newImageUrl) => {
     const existing = homeMain.villaPlan?.[key]?.image || "";
     let imageUrl = existing;
-    if (req.files && req.files[`${key}Image`]) {
+    if (newImageUrl && newImageUrl !== existing) {
       await deleteOld(existing);
-      imageUrl = req.files[`${key}Image`][0].path;
+      imageUrl = newImageUrl;
     }
     return { heading: cardHeading || "", description: cardDescription || "", image: imageUrl };
   };
@@ -140,8 +147,8 @@ const updateHomeVillaPlanSection = asyncHandler(async (req, res) => {
   homeMain.villaPlan = {
     heading: heading || "",
     subheading: subheading || "",
-    card1: await buildCard("card1", card1Heading, card1Description),
-    card2: await buildCard("card2", card2Heading, card2Description),
+    card1: await buildCard("card1", card1Heading, card1Description, card1Image),
+    card2: await buildCard("card2", card2Heading, card2Description, card2Image),
   };
 
   await homeMain.save();

@@ -68,6 +68,8 @@ app.use("/api/projects-main", require("./routes/projectsMainRoutes"));
 app.use("/api/testimonials-main", require("./routes/testimonialsMainRoutes"));
 // app.use("/api/testimonials", require("./routes/testimonialRoutes"));
 app.use("/api/contacts", require("./routes/contactRoutes"));
+app.use("/api/contact-main", require("./routes/contactMainRoutes"));
+app.use("/api/uploads", require("./routes/uploadRoutes"));
 
 // ─── Error Handling (must be LAST) ───────────────────────────────────────────
 app.use(notFound);

@@ -61,16 +61,10 @@ router.put(
 );
 
 // @route   PUT /api/home/main/villaplan
-router.put(
-  "/main/villaplan",
-  protect,
-  requireAdmin,
-  handleUpload(uploadHomeImage.fields([
-    { name: "card1Image", maxCount: 1 },
-    { name: "card2Image", maxCount: 1 },
-  ])),
-  updateHomeVillaPlanSection
-);
+// Images already live on Cloudinary by the time this runs — the frontend
+// uploads them directly (see /api/uploads/signature) and sends the
+// resulting URLs here as plain JSON, so no upload middleware is needed.
+router.put("/main/villaplan", protect, requireAdmin, updateHomeVillaPlanSection);
 
 // @route   PUT /api/home/main/chooseus
 router.put(

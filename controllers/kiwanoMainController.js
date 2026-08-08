@@ -167,26 +167,23 @@ exports.updateKiwanoTour360Section = async (req, res) => {
 // @desc    Update Kiwano Gallery section
 // @route   PUT /api/kiwano/main/gallery-section
 // @access  Private/Admin
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// list of URLs per category, never the files themselves, so it isn't
+// exposed to Vercel's ~4.5MB serverless function body limit.
 exports.updateKiwanoGallerySection = async (req, res) => {
   try {
     let data = await KiwanoMain.findOne();
     if (!data) data = new KiwanoMain();
 
-    const { heading, existingExteriorImages, existingInteriorImages, existingAmenitiesImages } = req.body;
+    const { heading, exteriorImages, interiorImages, amenitiesImages } = req.body;
     data.gallerySection.heading = heading !== undefined ? heading : data.gallerySection.heading;
 
-    const processImages = async (categoryName, existingListStr, uploadedFiles) => {
-      let updatedList = [];
-      if (existingListStr) {
-        try {
-          updatedList = JSON.parse(existingListStr);
-        } catch (err) {
-          updatedList = typeof existingListStr === "string" ? [existingListStr] : existingListStr;
-        }
-      }
+    const applyCategory = async (categoryName, newList) => {
+      if (newList === undefined) return;
 
       const oldList = data.gallerySection[categoryName] || [];
-      const removedList = oldList.filter((url) => !updatedList.includes(url));
+      const removedList = oldList.filter((url) => !newList.includes(url));
       for (const url of removedList) {
         try {
           const parts = url.split("/");
@@ -197,17 +194,12 @@ exports.updateKiwanoGallerySection = async (req, res) => {
         }
       }
 
-      if (uploadedFiles) {
-        const newUrls = uploadedFiles.map((file) => file.path);
-        updatedList = [...updatedList, ...newUrls];
-      }
-
-      data.gallerySection[categoryName] = updatedList;
+      data.gallerySection[categoryName] = newList;
     };
 
-    await processImages("exteriorImages", existingExteriorImages, req.files?.exteriorImages);
-    await processImages("interiorImages", existingInteriorImages, req.files?.interiorImages);
-    await processImages("amenitiesImages", existingAmenitiesImages, req.files?.amenitiesImages);
+    await applyCategory("exteriorImages", exteriorImages);
+    await applyCategory("interiorImages", interiorImages);
+    await applyCategory("amenitiesImages", amenitiesImages);
 
     await data.save();
     res.status(200).json({ success: true, data });

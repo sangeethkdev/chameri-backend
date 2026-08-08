@@ -19,6 +19,7 @@ const SECTION_PATHS = {
   "testimonials-main": ["/testimonial"],
   "projects-main": ["/project-list"],
   projects: ["/project-list"],
+  "contact-main": ["/contact"],
 };
 
 const pathsForRequest = (req) => {

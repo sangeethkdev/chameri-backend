@@ -71,15 +71,13 @@ router.put(
 
 // @route  PUT /api/kiwano/main/gallery-section
 // @access Private/Admin
+// Images already live on Cloudinary by the time this runs — the frontend
+// uploads them directly (see /api/uploads/signature) and sends the
+// resulting URLs here as plain JSON, so no upload middleware is needed.
 router.put(
   "/main/gallery-section",
   protect,
   requireAdmin,
-  uploadKiwanoImage.fields([
-    { name: "exteriorImages" },
-    { name: "interiorImages" },
-    { name: "amenitiesImages" },
-  ]),
   updateKiwanoGallerySection
 );
 
