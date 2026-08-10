@@ -142,18 +142,21 @@ const updateStorySection = asyncHandler(async (req, res) => {
 // @desc   Update Founder section only
 // @route  PUT /api/about/main/founder
 // @access Private (Admin only)
+// The founder image is uploaded directly to Cloudinary from the browser
+// (see POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself.
 const updateFounderSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
-  const { founderQuote, founderName, founderRole, founderArchitectsName } = req.body;
+  const { founderQuote, founderName, founderRole, founderArchitectsName, founderImage } = req.body;
   aboutMain.founder.quote = founderQuote || "";
   aboutMain.founder.name = founderName || "";
   aboutMain.founder.role = founderRole || "";
   aboutMain.founder.architectsName = founderArchitectsName || "";
 
-  // Handle Founder Image upload
-  if (req.files && req.files["founderImage"]) {
+  // Handle Founder Image (URL already resolved client-side)
+  if (founderImage !== undefined && founderImage !== aboutMain.founder.image) {
     if (aboutMain.founder.image) {
       try {
         const urlParts = aboutMain.founder.image.split("/");
@@ -164,7 +167,7 @@ const updateFounderSection = asyncHandler(async (req, res) => {
         console.error("Failed to delete old founder image:", err);
       }
     }
-    aboutMain.founder.image = req.files["founderImage"][0].path;
+    aboutMain.founder.image = founderImage;
   }
 
   await aboutMain.save();
@@ -174,22 +177,16 @@ const updateFounderSection = asyncHandler(async (req, res) => {
 // @desc   Update Work Logos section only
 // @route  PUT /api/about/main/logos
 // @access Private (Admin only)
+// Logos are uploaded directly to Cloudinary from the browser — this endpoint
+// only ever receives the final list of URLs, never the files themselves.
 const updateLogosSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
-  const { existingWorkLogos } = req.body;
+  const { workLogos } = req.body;
+  const updatedLogos = Array.isArray(workLogos) ? workLogos : (workLogos ? [workLogos] : []);
 
-  let updatedLogos = [];
-  if (existingWorkLogos) {
-    try {
-      updatedLogos = JSON.parse(existingWorkLogos);
-    } catch (err) {
-      updatedLogos = typeof existingWorkLogos === "string" ? [existingWorkLogos] : existingWorkLogos;
-    }
-  }
-
-  // Delete removed logos from Cloudinary
+  // Delete removed logos from Cloudinary (diff old stored list vs final list)
   const removedLogos = aboutMain.workLogos.filter((url) => !updatedLogos.includes(url));
   for (const url of removedLogos) {
     try {
@@ -202,12 +199,6 @@ const updateLogosSection = asyncHandler(async (req, res) => {
     }
   }
 
-  // Add newly uploaded logos
-  if (req.files && req.files["workLogos"]) {
-    const newLogoUrls = req.files["workLogos"].map((file) => file.path);
-    updatedLogos = [...updatedLogos, ...newLogoUrls];
-  }
-
   aboutMain.workLogos = updatedLogos;
   await aboutMain.save();
   res.json({ success: true, data: aboutMain });
@@ -216,13 +207,15 @@ const updateLogosSection = asyncHandler(async (req, res) => {
 // @desc   Update Vision & Mission section only
 // @route  PUT /api/about/main/vision-mission
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser — this
+// endpoint only ever receives the resulting URLs.
 const updateVisionMissionSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
   const {
-    visionTitle, visionHeading, visionSubheading,
-    missionTitle, missionHeading, missionSubheading,
+    visionTitle, visionHeading, visionSubheading, visionImage,
+    missionTitle, missionHeading, missionSubheading, missionImage,
   } = req.body;
 
   // Helper to delete old Cloudinary image
@@ -242,14 +235,14 @@ const updateVisionMissionSection = asyncHandler(async (req, res) => {
   let visionImageUrl = aboutMain.vision?.image || "";
   let missionImageUrl = aboutMain.mission?.image || "";
 
-  if (req.files && req.files["visionImage"]) {
+  if (visionImage !== undefined && visionImage !== visionImageUrl) {
     await deleteOldImage(visionImageUrl);
-    visionImageUrl = req.files["visionImage"][0].path;
+    visionImageUrl = visionImage;
   }
 
-  if (req.files && req.files["missionImage"]) {
+  if (missionImage !== undefined && missionImage !== missionImageUrl) {
     await deleteOldImage(missionImageUrl);
-    missionImageUrl = req.files["missionImage"][0].path;
+    missionImageUrl = missionImage;
   }
 
   aboutMain.vision = {
@@ -273,17 +266,19 @@ const updateVisionMissionSection = asyncHandler(async (req, res) => {
 // @desc   Update Special Section only
 // @route  PUT /api/about/main/special-section
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser — this
+// endpoint only ever receives the resolved URL per item.
 const updateSpecialSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
   const {
     specialTitle,
-    firstHeading,    firstSubheading,
-    secondHeading,   secondSubheading,
-    thirdHeading,    thirdSubheading,
-    fourthHeading,   fourthSubheading,
-    fifthHeading,    fifthSubheading,
+    firstHeading,    firstSubheading,    firstImage,
+    secondHeading,   secondSubheading,   secondImage,
+    thirdHeading,    thirdSubheading,    thirdImage,
+    fourthHeading,   fourthSubheading,   fourthImage,
+    fifthHeading,    fifthSubheading,    fifthImage,
   } = req.body;
 
   // Helper: delete old Cloudinary image by URL
@@ -298,54 +293,45 @@ const updateSpecialSection = asyncHandler(async (req, res) => {
     }
   };
 
-  // Build each item — preserve existing image unless a new one is uploaded
-  const buildItem = async (key, heading, subheading) => {
+  // Build each item — preserve existing image unless a new URL was sent
+  const buildItem = async (key, heading, subheading, image) => {
     const existing = aboutMain.specialSection?.[key]?.image || "";
     let imageUrl = existing;
-    if (req.files && req.files[`${key}Image`]) {
+    if (image !== undefined && image !== existing) {
       await deleteOld(existing);
-      imageUrl = req.files[`${key}Image`][0].path;
+      imageUrl = image;
     }
     return { heading: heading || "", subheading: subheading || "", image: imageUrl };
   };
 
   aboutMain.specialSection = {
     title:  specialTitle || "",
-    first:  await buildItem("first",  firstHeading,  firstSubheading),
-    second: await buildItem("second", secondHeading, secondSubheading),
-    third:  await buildItem("third",  thirdHeading,  thirdSubheading),
-    fourth: await buildItem("fourth", fourthHeading, fourthSubheading),
-    fifth:  await buildItem("fifth",  fifthHeading,  fifthSubheading),
+    first:  await buildItem("first",  firstHeading,  firstSubheading,  firstImage),
+    second: await buildItem("second", secondHeading, secondSubheading, secondImage),
+    third:  await buildItem("third",  thirdHeading,  thirdSubheading,  thirdImage),
+    fourth: await buildItem("fourth", fourthHeading, fourthSubheading, fourthImage),
+    fifth:  await buildItem("fifth",  fifthHeading,  fifthSubheading,  fifthImage),
   };
 
   await aboutMain.save();
   res.json({ success: true, data: aboutMain });
 });
 
-module.exports = {
-  getAboutMain,
-  updateAboutMain,
-  updateHeroSection,
-  updateStorySection,
-  updateFounderSection,
-  updateLogosSection,
-  updateVisionMissionSection,
-  updateSpecialSection,
-};
-
 // @desc   Update Board Section only
 // @route  PUT /api/about/main/board-section
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser — this
+// endpoint only ever receives the resolved URL per member.
 const updateBoardSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
   const {
     boardTitle,
-    firstName,    firstDesignation,
-    secondName,   secondDesignation,
-    thirdName,    thirdDesignation,
-    fourthName,   fourthDesignation,
+    firstName,    firstDesignation,    firstImage,
+    secondName,   secondDesignation,   secondImage,
+    thirdName,    thirdDesignation,    thirdImage,
+    fourthName,   fourthDesignation,   fourthImage,
   } = req.body;
 
   // Helper: delete old Cloudinary image by URL
@@ -360,23 +346,23 @@ const updateBoardSection = asyncHandler(async (req, res) => {
     }
   };
 
-  // Build each member — preserve existing image unless a new one is uploaded
-  const buildMember = async (key, name, designation) => {
+  // Build each member — preserve existing image unless a new URL was sent
+  const buildMember = async (key, name, designation, image) => {
     const existing = aboutMain.boardSection?.[key]?.image || "";
     let imageUrl = existing;
-    if (req.files && req.files[`${key}Image`]) {
+    if (image !== undefined && image !== existing) {
       await deleteOld(existing);
-      imageUrl = req.files[`${key}Image`][0].path;
+      imageUrl = image;
     }
     return { name: name || "", designation: designation || "", image: imageUrl };
   };
 
   aboutMain.boardSection = {
     title:  boardTitle || "",
-    first:  await buildMember("first",  firstName,  firstDesignation),
-    second: await buildMember("second", secondName, secondDesignation),
-    third:  await buildMember("third",  thirdName,  thirdDesignation),
-    fourth: await buildMember("fourth", fourthName, fourthDesignation),
+    first:  await buildMember("first",  firstName,  firstDesignation,  firstImage),
+    second: await buildMember("second", secondName, secondDesignation, secondImage),
+    third:  await buildMember("third",  thirdName,  thirdDesignation,  thirdImage),
+    fourth: await buildMember("fourth", fourthName, fourthDesignation, fourthImage),
   };
 
   await aboutMain.save();
@@ -386,16 +372,20 @@ const updateBoardSection = asyncHandler(async (req, res) => {
 // @desc   Update Testimonial Section only
 // @route  PUT /api/about/main/testimonial-section
 // @access Private (Admin only)
+// Each card's image/cardImage is already a Cloudinary URL by the time this
+// runs — the frontend uploads any new photos directly to Cloudinary and
+// resolves each card's final URL before sending this request, so no
+// index-matching against uploaded files is needed here.
 const updateTestimonialSection = asyncHandler(async (req, res) => {
   let aboutMain = await AboutMain.findOne();
   if (!aboutMain) aboutMain = new AboutMain();
 
-  const { testimonialHeading, testimonialSubheading, testimonialsData } = req.body;
+  const { testimonialHeading, testimonialSubheading, testimonials } = req.body;
 
   let parsedCards = [];
-  if (testimonialsData) {
+  if (testimonials) {
     try {
-      parsedCards = JSON.parse(testimonialsData);
+      parsedCards = typeof testimonials === "string" ? JSON.parse(testimonials) : testimonials;
     } catch (err) {
       console.error("Error parsing testimonials data", err);
     }
@@ -413,39 +403,13 @@ const updateTestimonialSection = asyncHandler(async (req, res) => {
     }
   };
 
-  const newCards = [];
-  let fileIndex = 0;
-  let cardFileIndex = 0;
-
-  for (let card of parsedCards) {
-    let imageUrl = card.existingImage || "";
-
-    if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-      if (req.files && req.files["testimonialImages"] && req.files["testimonialImages"][fileIndex]) {
-        if (imageUrl) await deleteOld(imageUrl);
-        imageUrl = req.files["testimonialImages"][fileIndex].path;
-        fileIndex++;
-      }
-    }
-
-    let cardImageUrl = card.existingCardImage || "";
-
-    if (card.newCardImageIndex !== undefined && card.newCardImageIndex !== null) {
-      if (req.files && req.files["testimonialCardImages"] && req.files["testimonialCardImages"][cardFileIndex]) {
-        if (cardImageUrl) await deleteOld(cardImageUrl);
-        cardImageUrl = req.files["testimonialCardImages"][cardFileIndex].path;
-        cardFileIndex++;
-      }
-    }
-
-    newCards.push({
-      quote: card.quote || "",
-      name: card.name || "",
-      designation: card.designation || "",
-      image: imageUrl,
-      cardImage: cardImageUrl,
-    });
-  }
+  const newCards = parsedCards.map((card) => ({
+    quote: card.quote || "",
+    name: card.name || "",
+    designation: card.designation || "",
+    image: card.image || "",
+    cardImage: card.cardImage || "",
+  }));
 
   const oldImages = aboutMain.testimonialSection?.cards?.map(c => c.image).filter(Boolean) || [];
   const oldCardImages = aboutMain.testimonialSection?.cards?.map(c => c.cardImage).filter(Boolean) || [];

@@ -62,20 +62,15 @@ const updateHomeAboutUsSection = asyncHandler(async (req, res) => {
 // @desc   Update Home Logos Section
 // @route  PUT /api/home/main/logos
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// list of logo URLs, never the files themselves, so it isn't exposed to
+// Vercel's ~4.5MB serverless function body limit.
 const updateHomeLogosSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
-  const { existingLogos } = req.body;
-
-  let updatedLogos = [];
-  if (existingLogos) {
-    try {
-      updatedLogos = JSON.parse(existingLogos);
-    } catch (err) {
-      updatedLogos = typeof existingLogos === "string" ? [existingLogos] : existingLogos;
-    }
-  }
+  const updatedLogos = Array.isArray(req.body.homeLogos) ? req.body.homeLogos : [];
 
   // Delete removed logos from Cloudinary
   const removedLogos = homeMain.logos.filter((url) => !updatedLogos.includes(url));
@@ -90,12 +85,6 @@ const updateHomeLogosSection = asyncHandler(async (req, res) => {
     } catch (err) {
       console.error("Failed to delete removed home logo:", err);
     }
-  }
-
-  // Add newly uploaded logos
-  if (req.files && req.files["homeLogos"]) {
-    const newLogoUrls = req.files["homeLogos"].map((file) => file.path);
-    updatedLogos = [...updatedLogos, ...newLogoUrls];
   }
 
   homeMain.logos = updatedLogos;
@@ -158,11 +147,20 @@ const updateHomeVillaPlanSection = asyncHandler(async (req, res) => {
 // @desc   Update Home Choose Us Section
 // @route  PUT /api/home/main/chooseus
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URLs, never the files themselves, so it isn't exposed to
+// Vercel's ~4.5MB serverless function body limit.
 const updateHomeChooseUsSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
-  const { heading, subheading, card1Heading, card1Subheading, card2Heading, card2Subheading, card3Heading, card3Subheading } = req.body;
+  const {
+    heading, subheading,
+    card1Heading, card1Subheading, card1Image,
+    card2Heading, card2Subheading, card2Image,
+    card3Heading, card3Subheading, card3Image,
+  } = req.body;
 
   // Helper: delete old Cloudinary image by URL
   const deleteOld = async (url) => {
@@ -179,12 +177,12 @@ const updateHomeChooseUsSection = asyncHandler(async (req, res) => {
     }
   };
 
-  const buildCard = async (key, cardHeading, cardSubheading) => {
+  const buildCard = async (key, cardHeading, cardSubheading, newImageUrl) => {
     const existing = homeMain.chooseUs?.[key]?.image || "";
     let imageUrl = existing;
-    if (req.files && req.files[`${key}Image`]) {
+    if (newImageUrl && newImageUrl !== existing) {
       await deleteOld(existing);
-      imageUrl = req.files[`${key}Image`][0].path;
+      imageUrl = newImageUrl;
     }
     return { heading: cardHeading || "", subheading: cardSubheading || "", image: imageUrl };
   };
@@ -192,9 +190,9 @@ const updateHomeChooseUsSection = asyncHandler(async (req, res) => {
   homeMain.chooseUs = {
     heading: heading || "",
     subheading: subheading || "",
-    card1: await buildCard("card1", card1Heading, card1Subheading),
-    card2: await buildCard("card2", card2Heading, card2Subheading),
-    card3: await buildCard("card3", card3Heading, card3Subheading),
+    card1: await buildCard("card1", card1Heading, card1Subheading, card1Image),
+    card2: await buildCard("card2", card2Heading, card2Subheading, card2Image),
+    card3: await buildCard("card3", card3Heading, card3Subheading, card3Image),
   };
 
   await homeMain.save();
@@ -204,6 +202,10 @@ const updateHomeChooseUsSection = asyncHandler(async (req, res) => {
 // @desc   Update Home Gallery Section
 // @route  PUT /api/home/main/gallery
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// per-card list of image URLs, never the files themselves, so it isn't
+// exposed to Vercel's ~4.5MB serverless function body limit.
 const updateHomeGallerySection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
@@ -214,23 +216,14 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
     const cardName = req.body[`${key}Name`] || "";
     const cardPlace = req.body[`${key}Place`] || "";
     const cardDate = req.body[`${key}Date`] || "";
-    
-    // Parse existing images passed from frontend
-    let existingImages = [];
-    if (req.body[`${key}ExistingImages`]) {
-      try {
-        existingImages = JSON.parse(req.body[`${key}ExistingImages`]);
-      } catch (err) {
-        existingImages = typeof req.body[`${key}ExistingImages`] === "string" 
-          ? [req.body[`${key}ExistingImages`]] 
-          : req.body[`${key}ExistingImages`];
-      }
-    }
+
+    // Final list of image URLs for this card, already resolved client-side
+    const images = Array.isArray(req.body[`${key}Images`]) ? req.body[`${key}Images`] : [];
 
     const previousImages = homeMain.gallery?.[key]?.images || [];
-    
+
     // Delete removed images from Cloudinary
-    const removedImages = previousImages.filter((url) => !existingImages.includes(url));
+    const removedImages = previousImages.filter((url) => !images.includes(url));
     for (const url of removedImages) {
       try {
         const urlParts = url.split("/upload/");
@@ -244,14 +237,7 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
       }
     }
 
-    // Add newly uploaded images
-    let updatedImages = [...existingImages];
-    if (req.files && req.files[`${key}Images`]) {
-      const newImageUrls = req.files[`${key}Images`].map((file) => file.path);
-      updatedImages = [...updatedImages, ...newImageUrls];
-    }
-
-    return { name: cardName, place: cardPlace, date: cardDate, images: updatedImages };
+    return { name: cardName, place: cardPlace, date: cardDate, images };
   };
 
   homeMain.gallery = {
@@ -271,6 +257,10 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
 // @desc   Update Home Our Team Section
 // @route  PUT /api/home/main/ourteam
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URLs, never the files themselves, so it isn't exposed to
+// Vercel's ~4.5MB serverless function body limit.
 const updateHomeOurTeamSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
@@ -295,12 +285,13 @@ const updateHomeOurTeamSection = asyncHandler(async (req, res) => {
   const buildCard = async (key) => {
     const cardName = req.body[`${key}Name`] || "";
     const cardDesignation = req.body[`${key}Designation`] || "";
-    
+    const newImageUrl = req.body[`${key}Image`];
+
     const existing = homeMain.ourTeam?.[key]?.image || "";
     let imageUrl = existing;
-    if (req.files && req.files[`${key}Image`]) {
+    if (newImageUrl && newImageUrl !== existing) {
       await deleteOld(existing);
-      imageUrl = req.files[`${key}Image`][0].path;
+      imageUrl = newImageUrl;
     }
     return { name: cardName, designation: cardDesignation, image: imageUrl };
   };
@@ -325,20 +316,18 @@ const updateHomeOurTeamSection = asyncHandler(async (req, res) => {
 // @desc   Update Home Testimonial Section
 // @route  PUT /api/home/main/testimonial
 // @access Private (Admin only)
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives each
+// card's already-resolved `image`/`cardImage` URLs, never the files
+// themselves, so it isn't exposed to Vercel's ~4.5MB serverless function
+// body limit.
 const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
   let homeMain = await HomeMain.findOne();
   if (!homeMain) homeMain = new HomeMain();
 
   const { heading, subheading, testimonialsData } = req.body;
 
-  let parsedCards = [];
-  if (testimonialsData) {
-    try {
-      parsedCards = JSON.parse(testimonialsData);
-    } catch (err) {
-      console.error("Error parsing testimonials data", err);
-    }
-  }
+  const parsedCards = Array.isArray(testimonialsData) ? testimonialsData : [];
 
   // Helper: delete old Cloudinary image by URL
   const deleteOld = async (url) => {
@@ -355,46 +344,13 @@ const updateHomeTestimonialSection = asyncHandler(async (req, res) => {
     }
   };
 
-  const newCards = [];
-  let fileIndex = 0;
-  let cardFileIndex = 0;
-  
-  for (let card of parsedCards) {
-    let imageUrl = card.existingImage || "";
-    
-    // If this card has a new file attached, get its path
-    if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-       if (req.files && req.files["testimonialImages"] && req.files["testimonialImages"][fileIndex]) {
-          // Delete old image if we are replacing it
-          if (imageUrl) {
-             await deleteOld(imageUrl);
-          }
-          imageUrl = req.files["testimonialImages"][fileIndex].path;
-          fileIndex++;
-       }
-    }
-    let cardImageUrl = card.existingCardImage || "";
-    
-    // If this card has a new card background image file attached, get its path
-    if (card.newCardImageIndex !== undefined && card.newCardImageIndex !== null) {
-       if (req.files && req.files["testimonialCardImages"] && req.files["testimonialCardImages"][cardFileIndex]) {
-          // Delete old image if we are replacing it
-          if (cardImageUrl) {
-             await deleteOld(cardImageUrl);
-          }
-          cardImageUrl = req.files["testimonialCardImages"][cardFileIndex].path;
-          cardFileIndex++;
-       }
-    }
-    
-    newCards.push({
-       quote: card.quote || "",
-       name: card.name || "",
-       designation: card.designation || "",
-       image: imageUrl,
-       cardImage: cardImageUrl
-    });
-  }
+  const newCards = parsedCards.map((card) => ({
+    quote: card.quote || "",
+    name: card.name || "",
+    designation: card.designation || "",
+    image: card.image || "",
+    cardImage: card.cardImage || "",
+  }));
 
   // Find images that were in the DB but are not in the newCards array, and delete them
   const oldImages = homeMain.testimonial?.cards?.map(c => c.image).filter(Boolean) || [];

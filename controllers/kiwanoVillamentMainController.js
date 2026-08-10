@@ -19,17 +19,21 @@ exports.getKiwanoVillamentMain = async (req, res) => {
 // @desc    Update Kiwano Villament hero section
 // @route   PUT /api/kiwano-villament/main/hero
 // @access  Private/Admin
+// The video is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 exports.updateKiwanoVillamentHeroSection = async (req, res) => {
   try {
-    const { heading } = req.body;
+    const { heading, video } = req.body;
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
     data.heroSection.heading = heading !== undefined ? heading : data.heroSection.heading;
 
-    // Handle video upload if provided
-    if (req.files && req.files.video && req.files.video[0]) {
-      data.heroSection.video = req.files.video[0].path;
+    // Handle video update if provided
+    if (video !== undefined) {
+      data.heroSection.video = video;
     }
 
     await data.save();
@@ -61,21 +65,18 @@ exports.updateKiwanoVillamentLuxuryVillasSection = async (req, res) => {
 // @desc    Update Kiwano Villament Features section
 // @route   PUT /api/kiwano-villament/main/feature-section
 // @access  Private/Admin
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// resolved { name, image } list, never the files themselves, so it isn't
+// exposed to Vercel's ~4.5MB serverless function body limit.
 exports.updateKiwanoVillamentFeatureSection = async (req, res) => {
   try {
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
-    const { featureHeading, featureSubheading, featuresData } = req.body;
+    const { featureHeading, featureSubheading, features } = req.body;
 
-    let parsedFeatures = [];
-    if (featuresData) {
-      try {
-        parsedFeatures = JSON.parse(featuresData);
-      } catch (err) {
-        console.error("Error parsing features data", err);
-      }
-    }
+    const parsedFeatures = Array.isArray(features) ? features : [];
 
     const deleteOld = async (url) => {
       if (!url) return;
@@ -88,27 +89,10 @@ exports.updateKiwanoVillamentFeatureSection = async (req, res) => {
       }
     };
 
-    const newFeatures = [];
-    let fileIndex = 0;
-
-    for (let feature of parsedFeatures) {
-      let imageUrl = feature.existingImage || "";
-
-      if (feature.newImageIndex !== undefined && feature.newImageIndex !== null) {
-        if (req.files && req.files["featureImages"] && req.files["featureImages"][fileIndex]) {
-          if (imageUrl) {
-            await deleteOld(imageUrl);
-          }
-          imageUrl = req.files["featureImages"][fileIndex].path;
-          fileIndex++;
-        }
-      }
-
-      newFeatures.push({
-        name: feature.name || "",
-        image: imageUrl
-      });
-    }
+    const newFeatures = parsedFeatures.map((feature) => ({
+      name: feature.name || "",
+      image: feature.image || "",
+    }));
 
     const oldImages = data.featureSection?.features?.map(c => c.image).filter(Boolean) || [];
     const newImages = newFeatures.map(c => c.image).filter(Boolean);
@@ -234,12 +218,16 @@ exports.updateKiwanoVillamentAmenitiesSection = async (req, res) => {
 // @desc    Update Kiwano Villament Highlights section
 // @route   PUT /api/kiwano-villament/main/highlights-section
 // @access  Private/Admin
+// Video and images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URLs, never the files themselves, so it isn't exposed to
+// Vercel's ~4.5MB serverless function body limit.
 exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
   try {
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
-    const { heading, subheading, existingImages } = req.body;
+    const { heading, subheading, video, images } = req.body;
 
     const deleteAsset = async (url) => {
       if (!url) return;
@@ -255,29 +243,17 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
     data.highlightsSection.heading = heading !== undefined ? heading : data.highlightsSection.heading;
     data.highlightsSection.subheading = subheading !== undefined ? subheading : data.highlightsSection.subheading;
 
-    if (req.files && req.files.video && req.files.video[0]) {
+    if (video !== undefined && video !== data.highlightsSection.video) {
       if (data.highlightsSection.video) await deleteAsset(data.highlightsSection.video);
-      data.highlightsSection.video = req.files.video[0].path;
+      data.highlightsSection.video = video;
     }
 
-    let updatedImages = [];
-    if (existingImages) {
-      try {
-        updatedImages = JSON.parse(existingImages);
-      } catch (err) {
-        updatedImages = typeof existingImages === "string" ? [existingImages] : existingImages;
-      }
-    }
+    let updatedImages = Array.isArray(images) ? images : (data.highlightsSection.images || []);
 
     const oldImages = data.highlightsSection.images || [];
     const removedImages = oldImages.filter((url) => !updatedImages.includes(url));
     for (const url of removedImages) {
       await deleteAsset(url);
-    }
-
-    if (req.files && req.files.images) {
-      const newUrls = req.files.images.map((file) => file.path);
-      updatedImages = [...updatedImages, ...newUrls];
     }
 
     data.highlightsSection.images = updatedImages.slice(0, 4);
@@ -292,18 +268,22 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
 // @desc    Update Kiwano Villament Other Project section
 // @route   PUT /api/kiwano-villament/main/other-project-section
 // @access  Private/Admin
+// The image is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 exports.updateKiwanoVillamentOtherProjectSection = async (req, res) => {
   try {
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
-    const { heading, subheading, imageHeading, imageSubheading } = req.body;
+    const { heading, subheading, imageHeading, imageSubheading, image } = req.body;
     data.otherProjectSection.heading = heading !== undefined ? heading : data.otherProjectSection.heading;
     data.otherProjectSection.subheading = subheading !== undefined ? subheading : data.otherProjectSection.subheading;
     data.otherProjectSection.imageHeading = imageHeading !== undefined ? imageHeading : data.otherProjectSection.imageHeading;
     data.otherProjectSection.imageSubheading = imageSubheading !== undefined ? imageSubheading : data.otherProjectSection.imageSubheading;
 
-    if (req.files && req.files.image && req.files.image[0]) {
+    if (image !== undefined && image !== data.otherProjectSection.image) {
       if (data.otherProjectSection.image) {
         try {
           const parts = data.otherProjectSection.image.split("/");
@@ -313,7 +293,7 @@ exports.updateKiwanoVillamentOtherProjectSection = async (req, res) => {
           console.error("Failed to delete old other project image:", err);
         }
       }
-      data.otherProjectSection.image = req.files.image[0].path;
+      data.otherProjectSection.image = image;
     }
 
     await data.save();

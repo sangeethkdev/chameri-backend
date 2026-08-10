@@ -7,7 +7,6 @@ const {
   updateServiceTestimonialSection,
 } = require("../controllers/serviceMainController");
 const { protect } = require("../middleware/auth");
-const { uploadServiceVideo, uploadServiceImage } = require("../middleware/upload");
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -22,35 +21,18 @@ router.get("/main", getServiceMain);
 
 // @route  PUT /api/services/main/hero
 // @access Private/Admin
-router.put(
-  "/main/hero",
-  protect,
-  requireAdmin,
-  uploadServiceVideo.fields([{ name: "video", maxCount: 1 }]),
-  updateServiceHeroSection
-);
+// Body is plain JSON — the video is uploaded to Cloudinary client-side first
+// (see uploadToCloudinary), so no multer/multipart handling is needed here.
+router.put("/main/hero", protect, requireAdmin, updateServiceHeroSection);
 
 // @route  PUT /api/services/main/cards-section
 // @access Private/Admin
-router.put(
-  "/main/cards-section",
-  protect,
-  requireAdmin,
-  uploadServiceImage.fields([{ name: "cardImages" }]),
-  updateServiceCardsSection
-);
+// Body is plain JSON — card images are uploaded to Cloudinary client-side first.
+router.put("/main/cards-section", protect, requireAdmin, updateServiceCardsSection);
 
 // @route  PUT /api/services/main/testimonial
 // @access Private/Admin
-router.put(
-  "/main/testimonial",
-  protect,
-  requireAdmin,
-  uploadServiceImage.fields([
-    { name: "testimonialImages", maxCount: 20 },
-    { name: "testimonialCardImages", maxCount: 20 },
-  ]),
-  updateServiceTestimonialSection
-);
+// Body is plain JSON — testimonial images are uploaded to Cloudinary client-side first.
+router.put("/main/testimonial", protect, requireAdmin, updateServiceTestimonialSection);
 
 module.exports = router;

@@ -33,12 +33,16 @@ const getProjectsMain = asyncHandler(async (req, res) => {
 
 // @desc   PUT /api/projects-main/main/hero
 // @access Private/Admin
+// Image is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 const updateProjectsHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { heading } = req.body;
+  const { heading, image } = req.body;
 
   if (heading !== undefined) doc.heroSection.heading = heading;
-  if (req.file) doc.heroSection.image = req.file.path;
+  if (image !== undefined) doc.heroSection.image = image;
 
   await doc.save();
   res.json({ success: true, data: doc });
@@ -46,37 +50,21 @@ const updateProjectsHeroSection = asyncHandler(async (req, res) => {
 
 // @desc   PUT /api/projects-main/main/cards-section
 // @access Private/Admin
+// Card images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// resolved cards array (each with an `image` URL), never the files
+// themselves, so it isn't exposed to Vercel's ~4.5MB body limit.
 const updateProjectsCardsSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
 
-  let parsedCards = [];
-  try {
-    parsedCards = JSON.parse(req.body.cardsData || "[]");
-  } catch (_) {
-    parsedCards = [];
-  }
+  const cards = Array.isArray(req.body.cards) ? req.body.cards : [];
 
-  const newCards = [];
-  let fileIndex = 0;
-
-  for (const card of parsedCards) {
-    let imageUrl = card.existingImage || "";
-
-    if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-      if (req.files?.cardImages?.[fileIndex]) {
-        if (imageUrl) await deleteOld(imageUrl);
-        imageUrl = req.files.cardImages[fileIndex].path;
-        fileIndex++;
-      }
-    }
-
-    newCards.push({
-      title: card.title || "",
-      heading: card.heading || "",
-      subheading: card.subheading || "",
-      image: imageUrl,
-    });
-  }
+  const newCards = cards.map((card) => ({
+    title: card.title || "",
+    heading: card.heading || "",
+    subheading: card.subheading || "",
+    image: card.image || "",
+  }));
 
   const oldImages = doc.cardsSection?.cards?.map((c) => c.image).filter(Boolean) || [];
   const newImages = newCards.map((c) => c.image).filter(Boolean);

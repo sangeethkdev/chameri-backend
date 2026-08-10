@@ -28,24 +28,21 @@ const getGalleryMain = asyncHandler(async (req, res) => {
 
 // @desc  PUT /api/gallery/main/hero
 // @access Private/Admin
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URLs, never the files themselves, so it isn't exposed to
+// Vercel's ~4.5MB serverless function body limit.
 const updateGalleryHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { firstText, secondText, thirdText } = req.body;
-  const files = req.files || {};
+  const { firstText, secondText, thirdText, firstImage, secondImage, thirdImage } = req.body;
 
   if (firstText  !== undefined) doc.heroSection.first.text  = firstText;
   if (secondText !== undefined) doc.heroSection.second.text = secondText;
   if (thirdText  !== undefined) doc.heroSection.third.text  = thirdText;
 
-  if (files.firstImage?.[0]) {
-    doc.heroSection.first.image = files.firstImage[0].path;
-  }
-  if (files.secondImage?.[0]) {
-    doc.heroSection.second.image = files.secondImage[0].path;
-  }
-  if (files.thirdImage?.[0]) {
-    doc.heroSection.third.image = files.thirdImage[0].path;
-  }
+  if (firstImage  !== undefined) doc.heroSection.first.image  = firstImage;
+  if (secondImage !== undefined) doc.heroSection.second.image = secondImage;
+  if (thirdImage  !== undefined) doc.heroSection.third.image  = thirdImage;
 
   await doc.save();
   res.json({ success: true, data: doc });
@@ -53,21 +50,16 @@ const updateGalleryHeroSection = asyncHandler(async (req, res) => {
 
 // @desc  PUT /api/gallery/main/images
 // @access Private/Admin
+// Images are uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the final
+// list of URLs, never the files themselves, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 const updateGalleryImages = asyncHandler(async (req, res) => {
   const doc = await getDoc();
 
-  // Existing URLs kept by the client (after user removed some)
-  let existing = [];
-  try {
-    existing = JSON.parse(req.body.existingImages || "[]");
-  } catch (_) {
-    existing = [];
-  }
+  const { galleryImages } = req.body;
+  doc.galleryImages = Array.isArray(galleryImages) ? galleryImages : [];
 
-  // New files uploaded via multer-cloudinary — path is already the Cloudinary URL
-  const newUrls = (req.files?.galleryImages || []).map((f) => f.path);
-
-  doc.galleryImages = [...existing, ...newUrls];
   await doc.save();
   res.json({ success: true, data: doc });
 });

@@ -21,14 +21,16 @@ exports.getServiceMain = async (req, res) => {
 // @access  Private/Admin
 exports.updateServiceHeroSection = async (req, res) => {
   try {
-    const { heading, subheading } = req.body;
+    const { heading, subheading, video } = req.body;
     let data = await ServiceMain.findOne();
     if (!data) data = new ServiceMain();
 
     data.heroSection.heading = heading !== undefined ? heading : data.heroSection.heading;
     data.heroSection.subheading = subheading !== undefined ? subheading : data.heroSection.subheading;
 
-    if (req.files && req.files.video && req.files.video[0]) {
+    // video is already a Cloudinary URL, uploaded client-side before this
+    // request — only destroy the old asset when it's actually being replaced.
+    if (video !== undefined && video !== data.heroSection.video) {
       if (data.heroSection.video) {
         try {
           const parts = data.heroSection.video.split("/");
@@ -38,7 +40,7 @@ exports.updateServiceHeroSection = async (req, res) => {
           console.error("Failed to delete old hero video:", err);
         }
       }
-      data.heroSection.video = req.files.video[0].path;
+      data.heroSection.video = video;
     }
 
     await data.save();
@@ -58,14 +60,10 @@ exports.updateServiceCardsSection = async (req, res) => {
 
     const { cardsHeading, cardsSubheading, cardsData } = req.body;
 
-    let parsedCards = [];
-    if (cardsData) {
-      try {
-        parsedCards = JSON.parse(cardsData);
-      } catch (err) {
-        console.error("Error parsing cards data", err);
-      }
-    }
+    // cardsData arrives as a plain JSON array — each card's image is already
+    // a Cloudinary URL, resolved client-side (new files uploaded directly to
+    // Cloudinary) before this request was sent.
+    const parsedCards = Array.isArray(cardsData) ? cardsData : [];
 
     const deleteOld = async (url) => {
       if (!url) return;
@@ -78,28 +76,11 @@ exports.updateServiceCardsSection = async (req, res) => {
       }
     };
 
-    const newCards = [];
-    let fileIndex = 0;
-
-    for (let card of parsedCards) {
-      let imageUrl = card.existingImage || "";
-
-      if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-        if (req.files && req.files["cardImages"] && req.files["cardImages"][fileIndex]) {
-          if (imageUrl) {
-            await deleteOld(imageUrl);
-          }
-          imageUrl = req.files["cardImages"][fileIndex].path;
-          fileIndex++;
-        }
-      }
-
-      newCards.push({
-        heading: card.heading || "",
-        subheading: card.subheading || "",
-        image: imageUrl,
-      });
-    }
+    const newCards = parsedCards.map((card) => ({
+      heading: card.heading || "",
+      subheading: card.subheading || "",
+      image: card.image || "",
+    }));
 
     const oldImages = data.cardsSection?.cards?.map((c) => c.image).filter(Boolean) || [];
     const newImages = newCards.map((c) => c.image).filter(Boolean);
@@ -132,14 +113,10 @@ exports.updateServiceTestimonialSection = async (req, res) => {
 
     const { heading, subheading, testimonialsData } = req.body;
 
-    let parsedCards = [];
-    if (testimonialsData) {
-      try {
-        parsedCards = JSON.parse(testimonialsData);
-      } catch (err) {
-        console.error("Error parsing testimonials data", err);
-      }
-    }
+    // testimonialsData arrives as a plain JSON array — each item's image and
+    // cardImage are already Cloudinary URLs, resolved client-side (new files
+    // uploaded directly to Cloudinary) before this request was sent.
+    const parsedCards = Array.isArray(testimonialsData) ? testimonialsData : [];
 
     // Helper: delete old Cloudinary image by URL
     const deleteOld = async (url) => {
@@ -156,43 +133,13 @@ exports.updateServiceTestimonialSection = async (req, res) => {
       }
     };
 
-    const newCards = [];
-    let fileIndex = 0;
-    let cardFileIndex = 0;
-
-    for (let card of parsedCards) {
-      let imageUrl = card.existingImage || "";
-
-      if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-        if (req.files && req.files["testimonialImages"] && req.files["testimonialImages"][fileIndex]) {
-          if (imageUrl) {
-            await deleteOld(imageUrl);
-          }
-          imageUrl = req.files["testimonialImages"][fileIndex].path;
-          fileIndex++;
-        }
-      }
-
-      let cardImageUrl = card.existingCardImage || "";
-
-      if (card.newCardImageIndex !== undefined && card.newCardImageIndex !== null) {
-        if (req.files && req.files["testimonialCardImages"] && req.files["testimonialCardImages"][cardFileIndex]) {
-          if (cardImageUrl) {
-            await deleteOld(cardImageUrl);
-          }
-          cardImageUrl = req.files["testimonialCardImages"][cardFileIndex].path;
-          cardFileIndex++;
-        }
-      }
-
-      newCards.push({
-        quote: card.quote || "",
-        name: card.name || "",
-        designation: card.designation || "",
-        image: imageUrl,
-        cardImage: cardImageUrl,
-      });
-    }
+    const newCards = parsedCards.map((card) => ({
+      quote: card.quote || "",
+      name: card.name || "",
+      designation: card.designation || "",
+      image: card.image || "",
+      cardImage: card.cardImage || "",
+    }));
 
     const oldImages = data.testimonial?.cards?.map((c) => c.image).filter(Boolean) || [];
     const newImages = newCards.map((c) => c.image).filter(Boolean);

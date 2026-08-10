@@ -69,17 +69,21 @@ const updatePassword = asyncHandler(async (req, res) => {
 // ─── Update Profile ───────────────────────────────────────────────────────────
 // @route  PUT /api/auth/update-profile
 // @access Private
+// The avatar is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 const updateProfile = asyncHandler(async (req, res) => {
   const admin = await Admin.findById(req.admin._id);
 
   if (req.body.name) admin.name = req.body.name;
 
-  if (req.file) {
+  if (req.body.avatar && req.body.avatar !== admin.avatar) {
     if (admin.avatar) {
       const publicId = admin.avatar.split("/").slice(-2).join("/").split(".")[0];
       await cloudinary.uploader.destroy(publicId).catch(() => {});
     }
-    admin.avatar = req.file.path;
+    admin.avatar = req.body.avatar;
   }
 
   await admin.save();

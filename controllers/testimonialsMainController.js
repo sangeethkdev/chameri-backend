@@ -35,10 +35,12 @@ const getTestimonialsMain = asyncHandler(async (req, res) => {
 // @access Private/Admin
 const updateTestimonialsHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { heading } = req.body;
+  // Image is uploaded straight from the browser to Cloudinary; we just
+  // receive the resulting URL here (see uploadToCloudinary on the frontend).
+  const { heading, image } = req.body;
 
   if (heading !== undefined) doc.heroSection.heading = heading;
-  if (req.file) doc.heroSection.image = req.file.path;
+  if (image !== undefined) doc.heroSection.image = image;
 
   await doc.save();
   res.json({ success: true, data: doc });
@@ -49,12 +51,11 @@ const updateTestimonialsHeroSection = asyncHandler(async (req, res) => {
 const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
 
-  let parsedCards = [];
-  try {
-    parsedCards = JSON.parse(req.body.reviewsData || "[]");
-  } catch (_) {
-    parsedCards = [];
-  }
+  // Images/videos are uploaded straight from the browser to Cloudinary before
+  // this request is sent, so each card already carries its final `image`/
+  // `video` URL (existing URL kept as-is, or the freshly uploaded one) —
+  // no files land on this backend anymore.
+  const parsedCards = Array.isArray(req.body.reviewsData) ? req.body.reviewsData : [];
 
   // Existing cards are reused (not rebuilt) so each keeps its _id and createdAt.
   // Rebuilding the array from scratch would re-date every review on every save.
@@ -66,32 +67,19 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
   const oldVideos = oldCards.map((c) => c.video).filter(Boolean);
 
   const newCards = [];
-  let imageFileIndex = 0;
-  let videoFileIndex = 0;
 
   for (const card of parsedCards) {
-    let imageUrl = card.existingImage || "";
-    let videoUrl = card.existingVideo || "";
-
-    if (card.newImageIndex !== undefined && card.newImageIndex !== null) {
-      if (req.files?.reviewImages?.[imageFileIndex]) {
-        if (imageUrl) await deleteOld(imageUrl, "image");
-        imageUrl = req.files.reviewImages[imageFileIndex].path;
-        imageFileIndex++;
-      }
-    }
-
-    if (card.newVideoIndex !== undefined && card.newVideoIndex !== null) {
-      if (req.files?.reviewVideos?.[videoFileIndex]) {
-        if (videoUrl) await deleteOld(videoUrl, "video");
-        videoUrl = req.files.reviewVideos[videoFileIndex].path;
-        videoFileIndex++;
-      }
-    }
+    const imageUrl = card.image || "";
+    const videoUrl = card.video || "";
 
     const existing = card._id ? existingById.get(String(card._id)) : null;
 
     if (existing) {
+      // Media URL actually changed (new upload replaced it) — clean up the
+      // orphaned Cloudinary asset it's replacing.
+      if (imageUrl !== existing.image && existing.image) await deleteOld(existing.image, "image");
+      if (videoUrl !== existing.video && existing.video) await deleteOld(existing.video, "video");
+
       // Mutate in place — _id and createdAt survive
       existing.image = imageUrl;
       existing.video = videoUrl;

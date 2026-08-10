@@ -6,7 +6,9 @@ const {
   updateTestimonialsReviewsSection,
 } = require("../controllers/testimonialsMainController");
 const { protect } = require("../middleware/auth");
-const { uploadTestimonialImage, uploadTestimonialMedia } = require("../middleware/upload");
+// Note: uploads for /main/hero and /main/reviews go straight from the
+// browser to Cloudinary (see uploadToCloudinary on the frontend), so no
+// multer middleware is needed on these routes anymore.
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -21,25 +23,10 @@ router.get("/main", getTestimonialsMain);
 
 // @route  PUT /api/testimonials-main/main/hero
 // @access Private/Admin
-router.put(
-  "/main/hero",
-  protect,
-  requireAdmin,
-  uploadTestimonialImage.single("image"),
-  updateTestimonialsHeroSection
-);
+router.put("/main/hero", protect, requireAdmin, updateTestimonialsHeroSection);
 
 // @route  PUT /api/testimonials-main/main/reviews
 // @access Private/Admin
-router.put(
-  "/main/reviews",
-  protect,
-  requireAdmin,
-  uploadTestimonialMedia.fields([
-    { name: "reviewImages", maxCount: 50 },
-    { name: "reviewVideos", maxCount: 50 },
-  ]),
-  updateTestimonialsReviewsSection
-);
+router.put("/main/reviews", protect, requireAdmin, updateTestimonialsReviewsSection);
 
 module.exports = router;

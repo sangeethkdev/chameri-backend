@@ -6,7 +6,6 @@ const {
   updateProjectsCardsSection,
 } = require("../controllers/projectsMainController");
 const { protect } = require("../middleware/auth");
-const { uploadProjectImage } = require("../middleware/upload");
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -21,22 +20,14 @@ router.get("/main", getProjectsMain);
 
 // @route  PUT /api/projects-main/main/hero
 // @access Private/Admin
-router.put(
-  "/main/hero",
-  protect,
-  requireAdmin,
-  uploadProjectImage.single("image"),
-  updateProjectsHeroSection
-);
+// Image is uploaded straight to Cloudinary from the browser; the request
+// body is plain JSON containing the resolved image URL (no multer).
+router.put("/main/hero", protect, requireAdmin, updateProjectsHeroSection);
 
 // @route  PUT /api/projects-main/main/cards-section
 // @access Private/Admin
-router.put(
-  "/main/cards-section",
-  protect,
-  requireAdmin,
-  uploadProjectImage.fields([{ name: "cardImages" }]),
-  updateProjectsCardsSection
-);
+// Card images are uploaded straight to Cloudinary from the browser; the
+// request body is plain JSON containing the resolved cards array (no multer).
+router.put("/main/cards-section", protect, requireAdmin, updateProjectsCardsSection);
 
 module.exports = router;

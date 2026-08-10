@@ -6,9 +6,6 @@ const {
   updateGalleryImages,
 } = require("../controllers/galleryMainController");
 const { protect } = require("../middleware/auth");
-const { createUploader } = require("../middleware/upload");
-
-const uploadGalleryImage = createUploader("chameri/gallery");
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -27,11 +24,6 @@ router.put(
   "/main/hero",
   protect,
   requireAdmin,
-  uploadGalleryImage.fields([
-    { name: "firstImage",  maxCount: 1 },
-    { name: "secondImage", maxCount: 1 },
-    { name: "thirdImage",  maxCount: 1 },
-  ]),
   updateGalleryHeroSection
 );
 
@@ -41,7 +33,6 @@ router.put(
   "/main/images",
   protect,
   requireAdmin,
-  uploadGalleryImage.fields([{ name: "galleryImages", maxCount: 100 }]),
   updateGalleryImages
 );
 

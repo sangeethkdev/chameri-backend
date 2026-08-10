@@ -11,7 +11,6 @@ const {
   resetPassword,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
-const { uploadGeneralImage } = require("../middleware/upload");
 
 // NOTE: Registration is disabled — only admins can create users via /api/admin/users
 
@@ -27,6 +26,6 @@ router.post("/reset-password", resetPassword);
 // ── Private ───────────────────────────────────────────────────────────────────
 router.get("/me", protect, getMe);
 router.put("/update-password", protect, updatePassword);
-router.put("/update-profile", protect, uploadGeneralImage.single("avatar"), updateProfile);
+router.put("/update-profile", protect, updateProfile);
 
 module.exports = router;

@@ -12,12 +12,6 @@ const {
   updateKiwanoVillamentHighlightsSection,
 } = require("../controllers/kiwanoVillamentMainController");
 const { protect } = require("../middleware/auth");
-const { uploadKiwanoVillamentVideo, uploadKiwanoVillamentImage, uploadKiwanoVillamentMedia } = require("../middleware/upload");
-
-const uploadKiwanoVillamentHighlights = uploadKiwanoVillamentMedia.fields([
-  { name: "video", maxCount: 1 },
-  { name: "images", maxCount: 4 },
-]);
 
 // Guard: admin-only writes
 const requireAdmin = (req, res, next) => {
@@ -32,11 +26,13 @@ router.get("/main", getKiwanoVillamentMain);
 
 // @route  PUT /api/kiwano-villament/main/hero
 // @access Private/Admin
+// The video is already on Cloudinary by the time this runs — the frontend
+// uploads it directly (see /api/uploads/signature) and sends the resulting
+// URL here as plain JSON, so no upload middleware is needed.
 router.put(
   "/main/hero",
   protect,
   requireAdmin,
-  uploadKiwanoVillamentVideo.fields([{ name: "video", maxCount: 1 }]),
   updateKiwanoVillamentHeroSection
 );
 
@@ -51,11 +47,14 @@ router.put(
 
 // @route  PUT /api/kiwano-villament/main/feature-section
 // @access Private/Admin
+// Images already live on Cloudinary by the time this runs — the frontend
+// uploads them directly (see /api/uploads/signature) and sends the
+// resolved { name, image } list here as plain JSON, so no upload
+// middleware is needed.
 router.put(
   "/main/feature-section",
   protect,
   requireAdmin,
-  uploadKiwanoVillamentImage.fields([{ name: "featureImages" }]),
   updateKiwanoVillamentFeatureSection
 );
 
@@ -94,21 +93,25 @@ router.put(
 
 // @route  PUT /api/kiwano-villament/main/other-project-section
 // @access Private/Admin
+// The image already lives on Cloudinary by the time this runs — the
+// frontend uploads it directly (see /api/uploads/signature) and sends the
+// resulting URL here as plain JSON, so no upload middleware is needed.
 router.put(
   "/main/other-project-section",
   protect,
   requireAdmin,
-  uploadKiwanoVillamentImage.fields([{ name: "image", maxCount: 1 }]),
   updateKiwanoVillamentOtherProjectSection
 );
 
 // @route  PUT /api/kiwano-villament/main/highlights-section
 // @access Private/Admin
+// Video and images already live on Cloudinary by the time this runs — the
+// frontend uploads them directly (see /api/uploads/signature) and sends the
+// resulting URLs here as plain JSON, so no upload middleware is needed.
 router.put(
   "/main/highlights-section",
   protect,
   requireAdmin,
-  uploadKiwanoVillamentHighlights,
   updateKiwanoVillamentHighlightsSection
 );
 

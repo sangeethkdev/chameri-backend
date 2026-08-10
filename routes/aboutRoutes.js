@@ -52,74 +52,40 @@ router.put("/main/hero", protect, requireAdmin, updateHeroSection);
 router.put("/main/story", protect, requireAdmin, updateStorySection);
 
 // @route   PUT /api/about/main/founder
-router.put(
-  "/main/founder",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([{ name: "founderImage", maxCount: 1 }]),
-  updateFounderSection
-);
+// @access  Private/Admin
+// The founder image is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) and sent here as plain JSON, so no upload
+// middleware is needed.
+router.put("/main/founder", protect, requireAdmin, updateFounderSection);
 
 // @route   PUT /api/about/main/logos
-router.put(
-  "/main/logos",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([{ name: "workLogos", maxCount: 10 }]),
-  updateLogosSection
-);
+// @access  Private/Admin
+// Logos are uploaded directly to Cloudinary from the browser and sent here
+// as the final list of URLs, so no upload middleware is needed.
+router.put("/main/logos", protect, requireAdmin, updateLogosSection);
 
 // @route   PUT /api/about/main/vision-mission
-router.put(
-  "/main/vision-mission",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([
-    { name: "visionImage", maxCount: 1 },
-    { name: "missionImage", maxCount: 1 },
-  ]),
-  updateVisionMissionSection
-);
+// @access  Private/Admin
+// Images are uploaded directly to Cloudinary from the browser and sent here
+// as plain JSON URLs, so no upload middleware is needed.
+router.put("/main/vision-mission", protect, requireAdmin, updateVisionMissionSection);
 
 // @route   PUT /api/about/main/special-section
-router.put(
-  "/main/special-section",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([
-    { name: "firstImage",  maxCount: 1 },
-    { name: "secondImage", maxCount: 1 },
-    { name: "thirdImage",  maxCount: 1 },
-    { name: "fourthImage", maxCount: 1 },
-    { name: "fifthImage",  maxCount: 1 },
-  ]),
-  updateSpecialSection
-);
+// @access  Private/Admin
+// Images are uploaded directly to Cloudinary from the browser and sent here
+// as plain JSON URLs, so no upload middleware is needed.
+router.put("/main/special-section", protect, requireAdmin, updateSpecialSection);
 
 // @route   PUT /api/about/main/board-section
-router.put(
-  "/main/board-section",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([
-    { name: "firstImage",  maxCount: 1 },
-    { name: "secondImage", maxCount: 1 },
-    { name: "thirdImage",  maxCount: 1 },
-    { name: "fourthImage", maxCount: 1 },
-  ]),
-  updateBoardSection
-);
+// @access  Private/Admin
+// Images are uploaded directly to Cloudinary from the browser and sent here
+// as plain JSON URLs, so no upload middleware is needed.
+router.put("/main/board-section", protect, requireAdmin, updateBoardSection);
 
 // @route   PUT /api/about/main/testimonial-section
-router.put(
-  "/main/testimonial-section",
-  protect,
-  requireAdmin,
-  uploadAboutImage.fields([
-    { name: "testimonialImages", maxCount: 20 },
-    { name: "testimonialCardImages", maxCount: 20 },
-  ]),
-  updateTestimonialSection
-);
+// @access  Private/Admin
+// Each card's image/cardImage is resolved to a final Cloudinary URL in the
+// browser before this request is sent, so no upload middleware is needed.
+router.put("/main/testimonial-section", protect, requireAdmin, updateTestimonialSection);
 
 module.exports = router;
