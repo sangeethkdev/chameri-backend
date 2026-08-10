@@ -134,16 +134,20 @@ exports.updateKiwanoFeatureSection = async (req, res) => {
 // @desc    Update Kiwano 360Tour section
 // @route   PUT /api/kiwano/main/tour360-section
 // @access  Private/Admin
+// Media is uploaded directly to Cloudinary from the browser (see
+// POST /api/uploads/signature) — this endpoint only ever receives the
+// resulting URL, never the file itself, so it isn't exposed to Vercel's
+// ~4.5MB serverless function body limit.
 exports.updateKiwanoTour360Section = async (req, res) => {
   try {
     let data = await KiwanoMain.findOne();
     if (!data) data = new KiwanoMain();
 
-    const { heading, subheading } = req.body;
+    const { heading, subheading, media } = req.body;
     data.tour360Section.heading = heading !== undefined ? heading : data.tour360Section.heading;
     data.tour360Section.subheading = subheading !== undefined ? subheading : data.tour360Section.subheading;
 
-    if (req.files && req.files.media && req.files.media[0]) {
+    if (media !== undefined && media !== data.tour360Section.media) {
       // If there's an existing media, we can attempt to delete it
       if (data.tour360Section.media) {
         try {
@@ -154,7 +158,7 @@ exports.updateKiwanoTour360Section = async (req, res) => {
           console.error("Failed to delete old media:", err);
         }
       }
-      data.tour360Section.media = req.files.media[0].path;
+      data.tour360Section.media = media;
     }
 
     await data.save();

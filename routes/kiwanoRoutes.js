@@ -61,11 +61,13 @@ router.put(
 
 // @route  PUT /api/kiwano/main/tour360-section
 // @access Private/Admin
+// Media already lives on Cloudinary by the time this runs — the frontend
+// uploads it directly (see /api/uploads/signature) and sends the resulting
+// URL here as plain JSON, so no upload middleware is needed.
 router.put(
   "/main/tour360-section",
   protect,
   requireAdmin,
-  uploadKiwanoMedia.fields([{ name: "media", maxCount: 1 }]),
   updateKiwanoTour360Section
 );
 
