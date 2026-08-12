@@ -50,6 +50,20 @@ app.get("/", (req, res) => {
   res.json({ success: true, message: "CHAMERI API is running 🚀" });
 });
 
+// ─── Ensure a DB connection before hitting any route ──────────────────────────
+// The initial connectDB() call above only runs once at boot. If it failed (or a
+// later connection ever drops) nothing retries it, so every DB-backed route would
+// hang until Mongoose's buffering timeout and return a 500. This makes every
+// request retry the connection (cheap — connectDB() reuses an existing one).
+app.use(async (_req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    res.status(503).json({ success: false, message: "Database unavailable. Please try again shortly." });
+  }
+});
+
 // ─── Push content changes to the public site (must precede the routes) ───────
 app.use(revalidateOnWrite);
 
