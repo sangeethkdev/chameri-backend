@@ -32,6 +32,7 @@ app.use(
       process.env.CLIENT_URL || "http://localhost:5173",
       process.env.FRONTEND_URL || "http://localhost:3000",
       "https://chameri-admin-dashboard.vercel.app",
+      "https://cb-admin.chameribuilders.com",
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:3000",
