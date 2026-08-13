@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const { isValidPhoneNumber } = require("libphonenumber-js");
 const Contact = require("../models/Contact");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,10 +20,19 @@ const createContact = asyncHandler(async (req, res) => {
     throw new Error("Please provide a valid email address");
   }
 
+  // Mirrors the frontend's react-phone-number-input check (same underlying
+  // libphonenumber rules) so a request sent straight to this API — bypassing
+  // the browser form — can't slip an invalid or malformed phone number past
+  // the same validation the UI already enforces.
+  if (!phone?.trim() || !isValidPhoneNumber(phone.trim())) {
+    res.status(400);
+    throw new Error("Please provide a valid phone number");
+  }
+
   const contact = await Contact.create({
     name: name.trim(),
     email: email.trim(),
-    phone: phone?.trim() || "",
+    phone: phone.trim(),
     subject: subject?.trim() || "",
     message: message.trim(),
     ipAddress: req.ip,
