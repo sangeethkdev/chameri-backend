@@ -64,8 +64,29 @@ const updateGalleryImages = asyncHandler(async (req, res) => {
   res.json({ success: true, data: doc });
 });
 
+// @desc  PUT /api/gallery/main/events
+// @access Private/Admin
+// Same Cloudinary-from-the-browser flow as /images — each event carries its
+// own title/date plus the URLs of the images already uploaded for it.
+const updateGalleryEvents = asyncHandler(async (req, res) => {
+  const doc = await getDoc();
+
+  const { galleryEvents } = req.body;
+  doc.galleryEvents = Array.isArray(galleryEvents)
+    ? galleryEvents.map((e) => ({
+        title: e?.title || "",
+        date: e?.date || "",
+        images: Array.isArray(e?.images) ? e.images : [],
+      }))
+    : [];
+
+  await doc.save();
+  res.json({ success: true, data: doc });
+});
+
 module.exports = {
   getGalleryMain,
   updateGalleryHeroSection,
   updateGalleryImages,
+  updateGalleryEvents,
 };

@@ -4,6 +4,7 @@ const {
   getGalleryMain,
   updateGalleryHeroSection,
   updateGalleryImages,
+  updateGalleryEvents,
 } = require("../controllers/galleryMainController");
 const { protect } = require("../middleware/auth");
 
@@ -34,6 +35,15 @@ router.put(
   protect,
   requireAdmin,
   updateGalleryImages
+);
+
+// @route  PUT /api/gallery/main/events
+// @access Private/Admin
+router.put(
+  "/main/events",
+  protect,
+  requireAdmin,
+  updateGalleryEvents
 );
 
 module.exports = router;
