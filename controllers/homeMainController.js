@@ -216,6 +216,7 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
     const cardName = req.body[`${key}Name`] || "";
     const cardPlace = req.body[`${key}Place`] || "";
     const cardDate = req.body[`${key}Date`] || "";
+    const cardProject = req.body[`${key}Project`] || "";
 
     // Final list of image URLs for this card, already resolved client-side
     const images = Array.isArray(req.body[`${key}Images`]) ? req.body[`${key}Images`] : [];
@@ -237,7 +238,7 @@ const updateHomeGallerySection = asyncHandler(async (req, res) => {
       }
     }
 
-    return { name: cardName, place: cardPlace, date: cardDate, images };
+    return { name: cardName, place: cardPlace, date: cardDate, images, project: cardProject };
   };
 
   homeMain.gallery = {

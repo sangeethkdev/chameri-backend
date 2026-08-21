@@ -48,6 +48,7 @@ const kiwanoMainSchema = new mongoose.Schema(
       subheading: { type: String, default: "" },
       video: { type: String, default: "" },
       images: [{ type: String }],
+      date: { type: String, default: "" },
     },
   },
   { timestamps: true }

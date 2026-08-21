@@ -69,31 +69,36 @@ const homeMainSchema = new mongoose.Schema(
         name: { type: String, default: "" },
         place: { type: String, default: "" },
         date: { type: String, default: "" },
-        images: [{ type: String }]
+        images: [{ type: String }],
+        project: { type: String, enum: ["", "kiwano", "kiwano-villament"], default: "" }
       },
       card2: {
         name: { type: String, default: "" },
         place: { type: String, default: "" },
         date: { type: String, default: "" },
-        images: [{ type: String }]
+        images: [{ type: String }],
+        project: { type: String, enum: ["", "kiwano", "kiwano-villament"], default: "" }
       },
       card3: {
         name: { type: String, default: "" },
         place: { type: String, default: "" },
         date: { type: String, default: "" },
-        images: [{ type: String }]
+        images: [{ type: String }],
+        project: { type: String, enum: ["", "kiwano", "kiwano-villament"], default: "" }
       },
       card4: {
         name: { type: String, default: "" },
         place: { type: String, default: "" },
         date: { type: String, default: "" },
-        images: [{ type: String }]
+        images: [{ type: String }],
+        project: { type: String, enum: ["", "kiwano", "kiwano-villament"], default: "" }
       },
       card5: {
         name: { type: String, default: "" },
         place: { type: String, default: "" },
         date: { type: String, default: "" },
-        images: [{ type: String }]
+        images: [{ type: String }],
+        project: { type: String, enum: ["", "kiwano", "kiwano-villament"], default: "" }
       }
     },
     ourTeam: {

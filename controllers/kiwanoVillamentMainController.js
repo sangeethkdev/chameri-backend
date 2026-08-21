@@ -227,7 +227,7 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
-    const { heading, subheading, video, images } = req.body;
+    const { heading, subheading, video, images, date } = req.body;
 
     const deleteAsset = async (url) => {
       if (!url) return;
@@ -242,6 +242,7 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
 
     data.highlightsSection.heading = heading !== undefined ? heading : data.highlightsSection.heading;
     data.highlightsSection.subheading = subheading !== undefined ? subheading : data.highlightsSection.subheading;
+    data.highlightsSection.date = date !== undefined ? date : data.highlightsSection.date;
 
     if (video !== undefined && video !== data.highlightsSection.video) {
       if (data.highlightsSection.video) await deleteAsset(data.highlightsSection.video);
