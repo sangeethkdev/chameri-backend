@@ -1,6 +1,11 @@
 const KiwanoVillamentMain = require("../models/KiwanoVillamentMain");
 const { cloudinary } = require("../config/cloudinary");
 
+/* Highlights timeline limits. The thumb strip on the site lays out exactly
+   four images per stage, so anything beyond that would never be rendered. */
+const MAX_HIGHLIGHT_IMAGES = 4;
+const MAX_HIGHLIGHT_MONTHS = 12;
+
 // @desc    Get Kiwano Villament main data
 // @route   GET /api/kiwano-villament/main
 // @access  Public
@@ -227,7 +232,7 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
     let data = await KiwanoVillamentMain.findOne();
     if (!data) data = new KiwanoVillamentMain();
 
-    const { heading, subheading, video, images, date } = req.body;
+    const { heading, subheading, months, video, images, date } = req.body;
 
     const deleteAsset = async (url) => {
       if (!url) return;
@@ -240,26 +245,66 @@ exports.updateKiwanoVillamentHighlightsSection = async (req, res) => {
       }
     };
 
+    /** Every media URL a highlights payload references, months included. */
+    const collectAssets = (section) => {
+      const urls = [];
+      if (section?.video) urls.push(section.video);
+      if (Array.isArray(section?.images)) urls.push(...section.images.filter(Boolean));
+      for (const month of section?.months || []) {
+        if (month?.video) urls.push(month.video);
+        if (Array.isArray(month?.images)) urls.push(...month.images.filter(Boolean));
+      }
+      return urls;
+    };
+
     data.highlightsSection.heading = heading !== undefined ? heading : data.highlightsSection.heading;
     data.highlightsSection.subheading = subheading !== undefined ? subheading : data.highlightsSection.subheading;
-    data.highlightsSection.date = date !== undefined ? date : data.highlightsSection.date;
 
-    if (video !== undefined && video !== data.highlightsSection.video) {
-      if (data.highlightsSection.video) await deleteAsset(data.highlightsSection.video);
-      data.highlightsSection.video = video;
+    /* Snapshot what the section referenced before this save, so anything the
+       new payload drops can be cleaned off Cloudinary afterwards. Taken from
+       a plain object because the sub-document array is about to be replaced. */
+    const previousAssets = collectAssets(data.highlightsSection.toObject
+      ? data.highlightsSection.toObject()
+      : data.highlightsSection);
+
+    if (Array.isArray(months)) {
+      data.highlightsSection.months = months.slice(0, MAX_HIGHLIGHT_MONTHS).map((month) => ({
+        label: typeof month?.label === "string" ? month.label : "",
+        date: typeof month?.date === "string" ? month.date : "",
+        video: typeof month?.video === "string" ? month.video : "",
+        images: Array.isArray(month?.images)
+          ? month.images.filter((url) => typeof url === "string" && url).slice(0, MAX_HIGHLIGHT_IMAGES)
+          : [],
+      }));
+
+      /* The timeline now owns the section's media. The admin panel seeds the
+         first month from these legacy fields, so leaving them populated would
+         keep a second copy of the same URLs around and let the site's legacy
+         fallback disagree with the timeline. Cleared only when the caller
+         didn't explicitly set them in this same request. */
+      if (video === undefined) data.highlightsSection.video = "";
+      if (images === undefined) data.highlightsSection.images = [];
+      if (date === undefined) data.highlightsSection.date = "";
     }
 
-    let updatedImages = Array.isArray(images) ? images : (data.highlightsSection.images || []);
-
-    const oldImages = data.highlightsSection.images || [];
-    const removedImages = oldImages.filter((url) => !updatedImages.includes(url));
-    for (const url of removedImages) {
-      await deleteAsset(url);
+    /* Legacy single-stage fields stay writable so an older client (or a
+       payload that only touches the text) keeps working unchanged. */
+    if (date !== undefined) data.highlightsSection.date = date;
+    if (video !== undefined) data.highlightsSection.video = video;
+    if (Array.isArray(images)) {
+      data.highlightsSection.images = images.slice(0, MAX_HIGHLIGHT_IMAGES);
     }
-
-    data.highlightsSection.images = updatedImages.slice(0, 4);
 
     await data.save();
+
+    /* Delete only assets no longer referenced anywhere in the section — an
+       image moved between months keeps its URL and must survive. Runs after
+       the save so a Cloudinary failure can't lose the content edit. */
+    const remainingAssets = new Set(collectAssets(data.highlightsSection.toObject()));
+    for (const url of previousAssets) {
+      if (!remainingAssets.has(url)) await deleteAsset(url);
+    }
+
     res.status(200).json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
