@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+/**
+ * One stage of the Highlights construction timeline. Each month owns its own
+ * media, so moving the timeline on the site swaps the large video and the
+ * thumbnail strip together.
+ *
+ * `_id: false` keeps these as plain embedded objects — the array is always
+ * replaced wholesale by the admin panel, never patched by sub-document id.
+ */
+const highlightMonthSchema = new mongoose.Schema(
+  {
+    // Timeline label, e.g. "MAY" — what the site prints under the strip.
+    label: { type: String, default: "" },
+    // Badge burned into the corner of the video, e.g. "May 2026".
+    date: { type: String, default: "" },
+    video: { type: String, default: "" },
+    images: [{ type: String }],
+  },
+  { _id: false }
+);
+
 const kiwanoMainSchema = new mongoose.Schema(
   {
     heroSection: {
@@ -46,6 +66,12 @@ const kiwanoMainSchema = new mongoose.Schema(
     highlightsSection: {
       heading: { type: String, default: "" },
       subheading: { type: String, default: "" },
+      // Per-month timeline cards — the source of truth for the section's media.
+      months: [highlightMonthSchema],
+      // Legacy single-stage fields, kept so documents saved before the
+      // timeline existed still render. The site falls back to these when
+      // `months` is empty, and the controller migrates them into the first
+      // month the next time months are saved.
       video: { type: String, default: "" },
       images: [{ type: String }],
       date: { type: String, default: "" },
