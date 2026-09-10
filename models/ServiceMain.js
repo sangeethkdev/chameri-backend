@@ -6,6 +6,13 @@ const serviceTestimonialCardSchema = new mongoose.Schema({
   designation: { type: String, default: "" },
   image: { type: String, default: "" },
   cardImage: { type: String, default: "" },
+  // Card media type. "image" keeps the existing cardImage behaviour, so
+  // documents saved before this field existed still render correctly.
+  cardMediaType: { type: String, enum: ["image", "video", "youtube"], default: "image" },
+  // Uploaded video (Cloudinary) — used when cardMediaType === "video"
+  cardVideo: { type: String, default: "" },
+  // Full YouTube URL as pasted by the admin — used when cardMediaType === "youtube"
+  cardYoutubeUrl: { type: String, default: "" },
 });
 
 const serviceMainSchema = new mongoose.Schema(

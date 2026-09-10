@@ -65,12 +65,23 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
   // below is the *same* subdocument reference as the entries in oldCards.
   const oldImages = oldCards.map((c) => c.image).filter(Boolean);
   const oldVideos = oldCards.map((c) => c.video).filter(Boolean);
+  // Card background images are a separate asset from the client photo above.
+  const oldCardImages = oldCards.map((c) => c.cardImage).filter(Boolean);
 
   const newCards = [];
 
+  // "video" stays the default: every review card was a video before the
+  // image and YouTube options existed, so cards saved back then keep working.
+  const MEDIA_TYPES = new Set(["image", "video", "youtube"]);
+
   for (const card of parsedCards) {
     const imageUrl = card.image || "";
-    const videoUrl = card.video || "";
+    const mediaType = MEDIA_TYPES.has(card.mediaType) ? card.mediaType : "video";
+    // Only the asset for the selected media type is kept, so switching type
+    // leaves no orphan URL behind for the cleanup pass below to miss.
+    const videoUrl = mediaType === "video" ? card.video || "" : "";
+    const cardImageUrl = mediaType === "image" ? card.cardImage || "" : "";
+    const youtubeUrl = mediaType === "youtube" ? (card.youtubeUrl || "").trim() : "";
 
     const existing = card._id ? existingById.get(String(card._id)) : null;
 
@@ -79,10 +90,14 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
       // orphaned Cloudinary asset it's replacing.
       if (imageUrl !== existing.image && existing.image) await deleteOld(existing.image, "image");
       if (videoUrl !== existing.video && existing.video) await deleteOld(existing.video, "video");
+      if (cardImageUrl !== existing.cardImage && existing.cardImage) await deleteOld(existing.cardImage, "image");
 
       // Mutate in place — _id and createdAt survive
       existing.image = imageUrl;
       existing.video = videoUrl;
+      existing.mediaType = mediaType;
+      existing.cardImage = cardImageUrl;
+      existing.youtubeUrl = youtubeUrl;
       existing.quote = card.quote || "";
       existing.name = card.name || "";
       existing.role = card.role || "";
@@ -93,6 +108,9 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
       newCards.push({
         image: imageUrl,
         video: videoUrl,
+        mediaType,
+        cardImage: cardImageUrl,
+        youtubeUrl,
         quote: card.quote || "",
         name: card.name || "",
         role: card.role || "",
@@ -108,6 +126,10 @@ const updateTestimonialsReviewsSection = asyncHandler(async (req, res) => {
   const newVideos = newCards.map((c) => c.video).filter(Boolean);
   const removedVideos = oldVideos.filter((url) => !newVideos.includes(url));
   for (const url of removedVideos) await deleteOld(url, "video");
+
+  const newCardImages = newCards.map((c) => c.cardImage).filter(Boolean);
+  const removedCardImages = oldCardImages.filter((url) => !newCardImages.includes(url));
+  for (const url of removedCardImages) await deleteOld(url, "image");
 
   doc.reviewsSection = { cards: newCards };
   await doc.save();

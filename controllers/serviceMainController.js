@@ -119,37 +119,58 @@ exports.updateServiceTestimonialSection = async (req, res) => {
     const parsedCards = Array.isArray(testimonialsData) ? testimonialsData : [];
 
     // Helper: delete old Cloudinary image by URL
-    const deleteOld = async (url) => {
+    const deleteOld = async (url, resourceType = "image") => {
       if (!url) return;
       try {
         const urlParts = url.split("/upload/");
         if (urlParts.length > 1) {
           const publicIdWithExt = urlParts[1].replace(/^v\d+\//, "");
           const publicId = publicIdWithExt.replace(/\.[^/.]+$/, "");
-          await cloudinary.uploader.destroy(publicId);
+          // Videos live under a separate Cloudinary resource type — destroying
+          // one without saying so silently no-ops and leaks the asset.
+          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
         }
       } catch (err) {
-        console.error("Failed to delete testimonial image:", err);
+        console.error("Failed to delete testimonial media:", err);
       }
     };
 
-    const newCards = parsedCards.map((card) => ({
-      quote: card.quote || "",
-      name: card.name || "",
-      designation: card.designation || "",
-      image: card.image || "",
-      cardImage: card.cardImage || "",
-    }));
+    const MEDIA_TYPES = new Set(["image", "video", "youtube"]);
+
+    const newCards = parsedCards.map((card) => {
+      const cardMediaType = MEDIA_TYPES.has(card.cardMediaType) ? card.cardMediaType : "image";
+      return {
+        quote: card.quote || "",
+        name: card.name || "",
+        designation: card.designation || "",
+        image: card.image || "",
+        // Only the asset matching the chosen media type is kept, so switching
+        // type leaves no orphan URL behind for the cleanup pass below to miss.
+        cardImage: cardMediaType === "image" ? card.cardImage || "" : "",
+        cardVideo: cardMediaType === "video" ? card.cardVideo || "" : "",
+        cardYoutubeUrl: cardMediaType === "youtube" ? card.cardYoutubeUrl || "" : "",
+        cardMediaType,
+      };
+    });
 
     const oldImages = data.testimonial?.cards?.map((c) => c.image).filter(Boolean) || [];
     const newImages = newCards.map((c) => c.image).filter(Boolean);
     const oldCardImages = data.testimonial?.cards?.map((c) => c.cardImage).filter(Boolean) || [];
     const newCardImages = newCards.map((c) => c.cardImage).filter(Boolean);
 
+    // Uploaded card videos are Cloudinary assets too, so they need the same
+    // orphan cleanup as images (YouTube URLs are external — nothing to delete).
+    const oldCardVideos = data.testimonial?.cards?.map((c) => c.cardVideo).filter(Boolean) || [];
+    const newCardVideos = newCards.map((c) => c.cardVideo).filter(Boolean);
+
     const removedImages = oldImages.filter((url) => !newImages.includes(url));
     const removedCardImages = oldCardImages.filter((url) => !newCardImages.includes(url));
+    const removedCardVideos = oldCardVideos.filter((url) => !newCardVideos.includes(url));
     for (const url of [...removedImages, ...removedCardImages]) {
       await deleteOld(url);
+    }
+    for (const url of removedCardVideos) {
+      await deleteOld(url, "video");
     }
 
     data.testimonial = {
