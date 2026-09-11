@@ -64,10 +64,13 @@ const updateProjectsCardsSection = asyncHandler(async (req, res) => {
     heading: card.heading || "",
     subheading: card.subheading || "",
     image: card.image || "",
+    mobileImage: card.mobileImage || "",
   }));
 
-  const oldImages = doc.cardsSection?.cards?.map((c) => c.image).filter(Boolean) || [];
-  const newImages = newCards.map((c) => c.image).filter(Boolean);
+  // Both image slots are Cloudinary assets, so orphan cleanup has to consider
+  // them together — a URL still used in the other slot must not be deleted.
+  const oldImages = doc.cardsSection?.cards?.flatMap((c) => [c.image, c.mobileImage]).filter(Boolean) || [];
+  const newImages = newCards.flatMap((c) => [c.image, c.mobileImage]).filter(Boolean);
   const removedImages = oldImages.filter((url) => !newImages.includes(url));
   for (const url of removedImages) await deleteOld(url);
 
