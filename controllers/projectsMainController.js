@@ -39,10 +39,12 @@ const getProjectsMain = asyncHandler(async (req, res) => {
 // ~4.5MB serverless function body limit.
 const updateProjectsHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { heading, image } = req.body;
+  const { heading, image, mobileImage } = req.body;
 
   if (heading !== undefined) doc.heroSection.heading = heading;
   if (image !== undefined) doc.heroSection.image = image;
+  // Optional per-page portrait crop; "" clears it and falls back to image.
+  if (mobileImage !== undefined) doc.heroSection.mobileImage = mobileImage;
 
   await doc.save();
   res.json({ success: true, data: doc });

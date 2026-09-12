@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 // Subdocument shape for each hero slide
 const heroSlideSchema = {
   image: { type: String, default: "" },
+  // Optional portrait crop shown on phones. A phone only ever displays a
+  // narrow vertical slice of the landscape `image`, so a dedicated crop keeps
+  // the subject in frame. Empty means "fall back to `image`", which is what
+  // every document saved before this field existed does.
+  mobileImage: { type: String, default: "" },
   text:  { type: String, default: "" },
 };
 

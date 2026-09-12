@@ -34,7 +34,11 @@ const getGalleryMain = asyncHandler(async (req, res) => {
 // Vercel's ~4.5MB serverless function body limit.
 const updateGalleryHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { firstText, secondText, thirdText, firstImage, secondImage, thirdImage } = req.body;
+  const {
+    firstText, secondText, thirdText,
+    firstImage, secondImage, thirdImage,
+    firstMobileImage, secondMobileImage, thirdMobileImage,
+  } = req.body;
 
   if (firstText  !== undefined) doc.heroSection.first.text  = firstText;
   if (secondText !== undefined) doc.heroSection.second.text = secondText;
@@ -43,6 +47,11 @@ const updateGalleryHeroSection = asyncHandler(async (req, res) => {
   if (firstImage  !== undefined) doc.heroSection.first.image  = firstImage;
   if (secondImage !== undefined) doc.heroSection.second.image = secondImage;
   if (thirdImage  !== undefined) doc.heroSection.third.image  = thirdImage;
+
+  // Optional per-slide portrait crop; "" clears it and falls back to `image`.
+  if (firstMobileImage  !== undefined) doc.heroSection.first.mobileImage  = firstMobileImage;
+  if (secondMobileImage !== undefined) doc.heroSection.second.mobileImage = secondMobileImage;
+  if (thirdMobileImage  !== undefined) doc.heroSection.third.mobileImage  = thirdMobileImage;
 
   await doc.save();
   res.json({ success: true, data: doc });

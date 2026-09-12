@@ -39,14 +39,28 @@ const deleteOld = async (url) => {
 // resulting URL, never the file itself.
 const updateContactHeroSection = asyncHandler(async (req, res) => {
   const doc = await getDoc();
-  const { heading, image } = req.body;
+  const { heading, image, mobileImage } = req.body;
 
   const existing = doc.heroSection?.image || "";
   if (image && image !== existing) {
     await deleteOld(existing);
   }
 
-  doc.heroSection = { heading: heading || "", image: image || existing };
+  // Optional portrait crop for phones, cleaned up the same way when replaced.
+  const existingMobile = doc.heroSection?.mobileImage || "";
+  if (mobileImage && mobileImage !== existingMobile) {
+    await deleteOld(existingMobile);
+  }
+
+  /* This assignment replaces the whole subdocument, so mobileImage has to be
+     carried explicitly — omitting it would wipe the saved crop on every save
+     that only changed the heading. `undefined` means "not sent, keep what is
+     there"; "" is an explicit clear. */
+  doc.heroSection = {
+    heading: heading || "",
+    image: image || existing,
+    mobileImage: mobileImage === undefined ? existingMobile : mobileImage,
+  };
   await doc.save();
   res.json({ success: true, data: doc });
 });
